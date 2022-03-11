@@ -3,7 +3,10 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.express as px
+
 pio.templates.default = "simple_white"
+pio.renderers.default = "browser"
+np.random.seed()
 
 
 def test_univariate_gaussian():
@@ -17,12 +20,17 @@ def test_univariate_gaussian():
     results = []
     for i in range(1, 101):
         fitter2 = UnivariateGaussian()
-        results.append(abs(10 - fitter2.fit(samples[0:(i*10 + 1)]).mu_))
+        results.append(abs(10 - fitter2.fit(samples[:(i * 10)]).mu_))
 
-    fig = px.scatter([i*10 for i in range(1, 101)], results)
+    fig = px.line(x=[i * 10 for i in range(1, 101)], y=results,
+                  labels=dict(x="Sample Size", y="abs distance between estimation and true"))
     fig.show()
 
     # Question 3 - Plotting Empirical PDF of fitted model
+    result = fitter.pdf(samples)
+
+    fig2 = px.scatter(x=samples, y=result, labels=dict(x="original sample value", y="PDF value"))
+    fig2.show()
 
 
 def test_multivariate_gaussian():

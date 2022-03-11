@@ -84,8 +84,8 @@ class UnivariateGaussian:
 
         result = X.copy()
 
-        for i in result:
-            fun(i)
+        for i, label in enumerate(result):
+            result[i] = fun(label)
         return result
 
     @staticmethod
