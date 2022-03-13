@@ -79,8 +79,9 @@ class UnivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
+
         fun = lambda x: (exp(- (((x - self.mu_) ** 2) /
-                                (self.var_ * 2)) / (sqrt(self.var_ * 2 * np.pi))))
+                                (self.var_ * 2))) / (sqrt(self.var_ * 2 * np.pi)))
 
         result = X.copy()
 
@@ -107,8 +108,16 @@ class UnivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-        raise NotImplementedError()
 
+        result = 1
+
+        for i in X:
+            result *= i
+
+        return result
+
+    def density_formula(self, mu, sigma, value):
+        return exp(- (((value - mu) ** 2) / (sigma * 2))) / (sqrt(sigma * 2 * np.pi))
 
 class MultivariateGaussian:
     """
@@ -154,7 +163,12 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
+        self.mu_ = np.zeros(len(X))
+        self.var_ = np.zeros(len(X))
+
+        for i, label in enumerate(X):
+            self.mu_[label] = np.mean(i)
+            self.var_[label] = np.var(i)
 
         self.fitted_ = True
         return self
@@ -179,7 +193,13 @@ class MultivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+
+        fun = lambda x: (exp(- (((x - self.mu_) ** 2) /
+                                (self.var_ * 2))) / (sqrt(self.var_ * 2 * np.pi)))
+        result = X.copy()
+
+        for i, label in enumerate(X):
+            result[label] = fun(i)
 
     @staticmethod
     def log_likelihood(mu: np.ndarray, cov: np.ndarray, X: np.ndarray) -> float:
