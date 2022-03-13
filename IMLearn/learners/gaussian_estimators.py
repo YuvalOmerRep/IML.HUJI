@@ -53,8 +53,12 @@ class UnivariateGaussian:
         Sets `self.mu_`, `self.var_` attributes according to calculated estimation (where
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
-        self.mu_ = np.mean(X)
-        self.var_ = np.var(X)
+        if not self.biased_:
+            self.mu_ = np.mean(X)
+            self.var_ = np.var(X)
+
+        else:
+            pass  # todo": biased
 
         self.fitted_ = True
         return self
@@ -118,6 +122,7 @@ class UnivariateGaussian:
 
     def density_formula(self, mu, sigma, value):
         return exp(- (((value - mu) ** 2) / (sigma * 2))) / (sqrt(sigma * 2 * np.pi))
+
 
 class MultivariateGaussian:
     """
