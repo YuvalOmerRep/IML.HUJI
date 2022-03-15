@@ -34,16 +34,24 @@ def test_univariate_gaussian():
 
 def test_multivariate_gaussian():
     # Question 4 - Draw samples and print fitted model
-    raise NotImplementedError()
+    mu = np.array([0, 0, 4, 0])
+    sigma = np.array([[1, 0.2, 0, 0.5], [0.2, 2, 0, 0], [0, 0, 1, 0], [0.5, 0, 0, 1]])
+
+    samples = np.random.multivariate_normal(mu, sigma, 1000)
+
+    mult = MultivariateGaussian()
+
+    mult.fit(samples)
+
+    print(mult.mu_)
+    print(mult.cov_)
 
     # Question 5 - Likelihood evaluation
-    raise NotImplementedError()
 
     # Question 6 - Maximum likelihood
-    raise NotImplementedError()
 
 
 if __name__ == '__main__':
     np.random.seed(0)
     test_univariate_gaussian()
-    # test_multivariate_gaussian()
+    test_multivariate_gaussian()
