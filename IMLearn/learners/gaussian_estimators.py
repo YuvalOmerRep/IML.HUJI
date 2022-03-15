@@ -53,12 +53,14 @@ class UnivariateGaussian:
         Sets `self.mu_`, `self.var_` attributes according to calculated estimation (where
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
+
+        self.mu_ = np.mean(X)
+
         if not self.biased_:
-            self.mu_ = np.mean(X)
-            self.var_ = np.var(X)
+            self.var_ = np.var(X, ddof=1)
 
         else:
-            pass  # todo": biased
+            self.var_ = np.var(X)
 
         self.fitted_ = True
         return self
@@ -113,15 +115,11 @@ class UnivariateGaussian:
             log-likelihood calculated
         """
 
-        result = 1
+        fun = lambda x: (exp(- (((x - mu) ** 2) / (sigma * 2))) / (sqrt(sigma * 2 * np.pi)))
 
-        for i in X:
-            result *= i
+        X = list(map(fun, X))
 
-        return result
-
-    def density_formula(self, mu, sigma, value):
-        return exp(- (((value - mu) ** 2) / (sigma * 2))) / (sqrt(sigma * 2 * np.pi))
+        return np.sum(np.log(X))
 
 
 class MultivariateGaussian:
@@ -168,12 +166,11 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        self.mu_ = np.zeros(len(X))
-        self.var_ = np.zeros(len(X))
+        self.mu_ = np.zeros(X.shape[0])
+        self.cov_ = np.zeros(X.shape[0], X.shape[0])
 
-        for i, label in enumerate(X):
-            self.mu_[label] = np.mean(i)
-            self.var_[label] = np.var(i)
+        self.mu_ = np.mean(X, axis=0)
+        self.cov_ = np.cov(X, ddof=1)
 
         self.fitted_ = True
         return self
@@ -199,8 +196,9 @@ class MultivariateGaussian:
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
 
-        fun = lambda x: (exp(- (((x - self.mu_) ** 2) /
-                                (self.var_ * 2))) / (sqrt(self.var_ * 2 * np.pi)))
+        fun = lambda x: (exp(-0.5 * (np.transpose(x - self.mu_) * inv(self.cov_) * (x - self.mu_)))
+                         / (np.sqrt(det(self.cov_) * pow(2 * np.pi, self.mu_.shape[0]))))
+
         result = X.copy()
 
         for i, label in enumerate(X):

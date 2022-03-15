@@ -6,7 +6,6 @@ import plotly.express as px
 
 pio.templates.default = "simple_white"
 pio.renderers.default = "browser"
-np.random.seed()
 
 
 def test_univariate_gaussian():
@@ -14,7 +13,7 @@ def test_univariate_gaussian():
     samples = np.random.normal(10, 1, 1000)
     fitter = UnivariateGaussian()
     fitter.fit(samples)
-    print(fitter.mu_, fitter.var_)
+    print(f"({fitter.mu_}, {fitter.var_})")
 
     # Question 2 - Empirically showing sample mean is consistent
     results = []
