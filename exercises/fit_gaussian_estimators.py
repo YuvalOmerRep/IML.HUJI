@@ -1,6 +1,5 @@
 from IMLearn.learners import UnivariateGaussian, MultivariateGaussian
 import numpy as np
-import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.express as px
 
@@ -21,15 +20,15 @@ def test_univariate_gaussian():
         fitter2 = UnivariateGaussian()
         results.append(abs(10 - fitter2.fit(samples[:(i * 10)]).mu_))
 
-    fig = px.line(x=[i * 10 for i in range(1, 101)], y=results,
-                  labels=dict(x="Sample Size", y="abs distance between estimation and true"))
-    fig.show()
+    px.line(x=[i * 10 for i in range(1, 101)], y=results,
+            labels=dict(x="Sample Size", y="abs distance between estimation and true"),
+            title="Distance from true expectation to estimated expectation over different sample sizes").show()
 
     # Question 3 - Plotting Empirical PDF of fitted model
     result = fitter.pdf(samples)
 
-    fig2 = px.scatter(x=samples, y=result, labels=dict(x="original sample value", y="PDF value"))
-    fig2.show()
+    px.scatter(x=samples, y=result, labels=dict(x="original sample value", y="PDF value"),
+               title="PDF values returned by the fitted model over their sampled value").show()
 
 
 def test_multivariate_gaussian():
@@ -50,16 +49,30 @@ def test_multivariate_gaussian():
     f1 = np.linspace(-10, 10, 200)
     f3 = np.linspace(-10, 10, 200)
 
-    results = []
+    results = np.zeros(40000)
+    axis_values = np.zeros([40000, 2])
+    count = 0
     for i in f1:
         for j in f3:
             mu1 = np.array([i, 0, j, 0])
-            results.append(MultivariateGaussian.log_likelihood(mu1, sigma, samples))
+            results[count] = MultivariateGaussian.log_likelihood(mu1, sigma, samples)
+            axis_values[count] = [i, j]
+            count += 1
 
-    figure2 = px.density_heatmap(x=f1, y=f3, z=results, histfunc="avg", histnorm="density")
-    figure2.show()
+    px.density_heatmap(x=axis_values[:, 0], y=axis_values[:, 1], z=results, histfunc="avg", histnorm="density",
+                       labels=dict(x="values from f1", y="values from f3"),
+                       title="Density heat map of log likelihood with relation to "
+                             "changing values of indexes in the expectation").show()
 
     # Question 6 - Maximum likelihood
+    maximum = np.amax(results)
+    index_of_maximum = np.where(results == maximum)
+    axis_indexes = axis_values[index_of_maximum][0]
+    f1_value = axis_indexes[0]
+    f3_value = axis_indexes[1]
+
+    print(f"The maximum log-likelihood was achieved with {f1_value} for f1\n"
+          f"and {f3_value} for f3 with the log-likelihood value of {round(maximum, 3)}")
 
 
 if __name__ == '__main__':
