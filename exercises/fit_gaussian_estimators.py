@@ -47,6 +47,17 @@ def test_multivariate_gaussian():
     print(mult.cov_)
 
     # Question 5 - Likelihood evaluation
+    f1 = np.linspace(-10, 10, 200)
+    f3 = np.linspace(-10, 10, 200)
+
+    results = []
+    for i in f1:
+        for j in f3:
+            mu1 = np.array([i, 0, j, 0])
+            results.append(MultivariateGaussian.log_likelihood(mu1, sigma, samples))
+
+    figure2 = px.density_heatmap(x=f1, y=f3, z=results, histfunc="avg", histnorm="density")
+    figure2.show()
 
     # Question 6 - Maximum likelihood
 

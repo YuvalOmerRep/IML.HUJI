@@ -86,14 +86,10 @@ class UnivariateGaussian:
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
 
-        fun = lambda x: (exp(- (((x - self.mu_) ** 2) /
-                                (self.var_ * 2))) / (sqrt(self.var_ * 2 * np.pi)))
+        fun = lambda x: (np.exp(- (((x - self.mu_) ** 2) /
+                                (self.var_ * 2))) / (np.sqrt(self.var_ * 2 * np.pi)))
 
-        result = X.copy()
-
-        for i, label in enumerate(result):
-            result[i] = fun(label)
-        return result
+        return np.apply_along_axis(fun, 0, np.transpose(X))
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -117,9 +113,7 @@ class UnivariateGaussian:
 
         fun = lambda x: (exp(- (((x - mu) ** 2) / (sigma * 2))) / (sqrt(sigma * 2 * np.pi)))
 
-        X = list(map(fun, X))
-
-        return np.sum(np.log(X))
+        return np.sum(np.log(list(map(fun, X))))
 
 
 class MultivariateGaussian:
@@ -166,11 +160,9 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        self.mu_ = np.zeros(X.shape[0])
-        self.cov_ = np.zeros([X.shape[0], X.shape[0]])
 
         self.mu_ = np.mean(X, axis=0)
-        self.cov_ = np.cov(X, ddof=1)
+        self.cov_ = np.cov(np.transpose(X), ddof=1)
 
         self.fitted_ = True
         return self
@@ -193,16 +185,16 @@ class MultivariateGaussian:
         ------
         ValueError: In case function was called prior fitting the model
         """
+        inv_cov = inv(self.cov_)
+        division_constant = (np.sqrt(det(self.cov_) * pow(2 * np.pi, self.mu_.shape[0])))
+
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
 
-        fun = lambda x: (exp(-0.5 * (np.transpose(x - self.mu_) * inv(self.cov_) * (x - self.mu_)))
-                         / (np.sqrt(det(self.cov_) * pow(2 * np.pi, self.mu_.shape[0]))))
+        fun = lambda x: (np.exp(-0.5 * (np.matmul(np.matmul(np.transpose(x - self.mu_), inv_cov), (x - self.mu_))))
+                         / division_constant)
 
-        result = X.copy()
-
-        for i, label in enumerate(X):
-            result[label] = fun(i)
+        return np.apply_along_axis(fun, 0, np.transpose(X))
 
     @staticmethod
     def log_likelihood(mu: np.ndarray, cov: np.ndarray, X: np.ndarray) -> float:
@@ -223,4 +215,10 @@ class MultivariateGaussian:
         log_likelihood: float
             log-likelihood calculated over all input data and under given parameters of Gaussian
         """
-        raise NotImplementedError()
+        inv_cov = inv(cov)
+        division_constant = (np.sqrt(det(cov) * pow(2 * np.pi, mu.shape[0])))
+
+        fun = lambda x: (np.exp(-0.5 * (np.matmul(np.matmul(np.transpose(x - mu), inv_cov), (x - mu))))
+                         / division_constant)
+
+        return np.sum(np.log(list(map(fun, X))))
