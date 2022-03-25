@@ -218,7 +218,6 @@ class MultivariateGaussian:
         inv_cov = inv(cov)
         division_constant = (np.sqrt(det(cov) * pow(2 * np.pi, mu.shape[0])))
 
-        fun = lambda x: (np.exp(-0.5 * (np.matmul(np.matmul(np.transpose(x - mu), inv_cov), (x - mu))))
-                         / division_constant)
+        fun = lambda x: (np.exp(-0.5 * (np.transpose(x - mu) @ inv_cov @ (x - mu))) / division_constant)
 
         return np.sum(np.log(list(map(fun, X))))

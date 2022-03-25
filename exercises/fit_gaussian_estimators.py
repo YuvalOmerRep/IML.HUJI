@@ -59,8 +59,8 @@ def test_multivariate_gaussian():
             axis_values[count] = [i, j]
             count += 1
 
-    px.density_heatmap(x=axis_values[:, 0], y=axis_values[:, 1], z=results, histfunc="avg", histnorm="density",
-                       labels=dict(x="values from f1", y="values from f3"),
+    px.density_heatmap(x=axis_values[:, 1], y=axis_values[:, 0], z=results, histfunc="avg", histnorm="density",
+                       labels=dict(x="values from f3", y="values from f1"),
                        title="Density heat map of log likelihood with relation to "
                              "changing values of indexes in the expectation").show()
 
