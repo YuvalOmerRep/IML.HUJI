@@ -23,7 +23,31 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    full_data = pd.read_csv(filename)
+    full_data = pd.read_csv(filename).dropna()
+
+    full_data = full_data.drop(full_data[full_data.price < 1].index)
+
+    labels = full_data["price"]
+
+    features = full_data[["bedrooms",
+                          "bathrooms",
+                          "sqft_living",
+                          "sqft_lot",
+                          "floors",
+                          "waterfront",
+                          "view",
+                          "condition",
+                          "grade",
+                          "sqft_above",
+                          "sqft_basement",
+                          "yr_built",
+                          "yr_renovated",
+                          "lat",
+                          "long",
+                          "sqft_living15",
+                          "sqft_lot15"]]
+
+    return features, labels
 
 
 def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") -> NoReturn:
@@ -43,25 +67,33 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
     output_path: str (default ".")
         Path to folder in which plots are saved
     """
-    raise NotImplementedError()
+    pearson_correlation_values = np.apply_along_axis(pearson_correlation, 0, X, np.array(y))
+
+    px.scatter(x=X["sqft_living"], y=y).write_image(f"{output_path}/sqft_living.png")
+    px.scatter(x=X["long"], y=y).write_image(f"{output_path}/long.png")
+
+
+def pearson_correlation(X: np.array, y: np.array) -> float:
+    return (np.cov(X, y) / (np.std(X) * np.std(y)))[0][1]
 
 
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
-    raise NotImplementedError()
+    house_features, house_prices = load_data(
+        "C:/Users/yuval/Desktop/second_year/semester_B/IML.HUJI/datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
-    raise NotImplementedError()
+    feature_evaluation(house_features, house_prices)
 
-    # Question 3 - Split samples into training- and testing sets.
-    raise NotImplementedError()
-
-    # Question 4 - Fit model over increasing percentages of the overall training data
-    # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
-    #   1) Sample p% of the overall training data
-    #   2) Fit linear model (including intercept) over sampled set
-    #   3) Test fitted model over test set
-    #   4) Store average and variance of loss over test set
-    # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
-    raise NotImplementedError()
+    # # Question 3 - Split samples into training- and testing sets.
+    # raise NotImplementedError()
+    #
+    # # Question 4 - Fit model over increasing percentages of the overall training data
+    # # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
+    # #   1) Sample p% of the overall training data
+    # #   2) Fit linear model (including intercept) over sampled set
+    # #   3) Test fitted model over test set
+    # #   4) Store average and variance of loss over test set
+    # # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
+    # raise NotImplementedError()
