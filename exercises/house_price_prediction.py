@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import plotly.io as pio
+
 pio.templates.default = "simple_white"
 
 
@@ -23,7 +24,7 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    full_data = pd.read_csv(filename).dropna()
+    full_data = pd.read_csv(filename).dropna().drop_duplicates()
 
     full_data = full_data.drop(full_data[full_data.price < 1].index)
 
@@ -69,8 +70,12 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
     """
     pearson_correlation_values = np.apply_along_axis(pearson_correlation, 0, X, np.array(y))
 
-    px.scatter(x=X["sqft_living"], y=y).write_image(f"{output_path}/sqft_living.png")
-    px.scatter(x=X["long"], y=y).write_image(f"{output_path}/long.png")
+    for index, feature in enumerate(X.keys()):
+        go.Figure().add_trace(
+            go.Scatter(x=X[feature], y=y,
+                       mode="markers")).update_layout(title={
+            "text": f"{feature} with Pearson Correlation "
+                    f"{pearson_correlation_values[index]}"}).write_image(f"{output_path}/{feature}.png")
 
 
 def pearson_correlation(X: np.array, y: np.array) -> float:
@@ -81,7 +86,7 @@ if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
     house_features, house_prices = load_data(
-        "C:/Users/yuval/Desktop/second_year/semester_B/IML.HUJI/datasets/house_prices.csv")
+        "../datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
     feature_evaluation(house_features, house_prices)
