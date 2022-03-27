@@ -86,6 +86,10 @@ if __name__ == '__main__':
     # Question 2 - Feature evaluation with respect to response
     feature_evaluation(house_features, house_prices)
 
+    regressor = LinearRegression()
+
+    regressor.fit(house_features, house_prices)
+
     # # Question 3 - Split samples into training- and testing sets.
     # raise NotImplementedError()
     #
