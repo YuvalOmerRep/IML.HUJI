@@ -24,29 +24,43 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
+
     full_data = pd.read_csv(filename).dropna().drop_duplicates()
 
-    full_data = full_data.drop(full_data[full_data.price < 1].index)
+    full_data.drop(full_data[full_data.price < 1].index, inplace=True)
 
     labels = full_data["price"]
+
+    # features = full_data[["bedrooms",
+    #                       "bathrooms",
+    #                       "sqft_living",
+    #                       "sqft_lot",
+    #                       "floors",
+    #                       "waterfront",
+    #                       "view",
+    #                       "condition",
+    #                       "grade",
+    #                       "sqft_above",
+    #                       "sqft_basement",
+    #                       "yr_built",
+    #                       "yr_renovated",
+    #                       "lat",
+    #                       "zipcode",
+    #                       "long",
+    #                       "sqft_living15",
+    #                       "sqft_lot15"]]
 
     features = full_data[["bedrooms",
                           "bathrooms",
                           "sqft_living",
-                          "sqft_lot",
                           "floors",
-                          "waterfront",
-                          "view",
-                          "condition",
-                          "grade",
-                          "sqft_above",
-                          "sqft_basement",
                           "yr_built",
-                          "yr_renovated",
-                          "lat",
-                          "long",
-                          "sqft_living15",
-                          "sqft_lot15"]]
+                          "yr_renovated"]]
+
+    features["yr_renovated"] = features["yr_renovated"].mask(features["yr_renovated"] <= 0,
+                                                             features["yr_built"], axis=0)
+
+    # print(features["yr_renovated"])
 
     return features, labels
 
@@ -89,20 +103,25 @@ if __name__ == '__main__':
         "../datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
-    feature_evaluation(house_features, house_prices)
+    # feature_evaluation(house_features, house_prices)
 
     regressor = LinearRegression()
 
     regressor.fit(house_features, house_prices)
 
-    # # Question 3 - Split samples into training- and testing sets.
-    # raise NotImplementedError()
+    # Question 3 - Split samples into training- and testing sets.
+    x_train, y_train, x_test, y_test = split_train_test(house_features, house_prices)
+
+
+    # Question 4 - Fit model over increasing percentages of the overall training data
+    # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
+    #   1) Sample p% of the overall training data
+    #   2) Fit linear model (including intercept) over sampled set
+    #   3) Test fitted model over test set
+    #   4) Store average and variance of loss over test set
+    # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
+
+    regressor = LinearRegression()
     #
-    # # Question 4 - Fit model over increasing percentages of the overall training data
-    # # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
-    # #   1) Sample p% of the overall training data
-    # #   2) Fit linear model (including intercept) over sampled set
-    # #   3) Test fitted model over test set
-    # #   4) Store average and variance of loss over test set
-    # # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
-    # raise NotImplementedError()
+    # for i in range(10, 101):
+    #     regressor.fit(x_train.sample(frac=))
