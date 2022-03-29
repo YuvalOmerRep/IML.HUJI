@@ -24,12 +24,19 @@ def load_data(filename: str):
     """
     # TODO - replace below code with any desired preprocessing
     full_data = pd.read_csv(filename).drop_duplicates()
-    features = full_data[["cancellation_policy_code"]].fillna(value=0)
-    labels = full_data["cancellation_datetime"].fillna(value="")
+    data = pd.read_csv(filename, parse_dates=['booking_datetime',
+                                              'checkin_date']).dropna().drop_duplicates()
 
-    transform_policy("130D1N_45D100P")
+    data['TimeDiff'] = (data['checkin_date'] - data['booking_datetime']).dt.days
 
-    return features, labels
+    data["cancellation_policy_numbered"] = \
+        data.apply(lambda x: transform_policy(x["cancellation_policy_code"],
+                                              x["TimeDiff"],
+                                              x["original_selling_amount"]), axis=1)
+
+    print(data["cancellation_policy_numbered"])
+
+    return data
 
 
 regex = r"""([\d]*)([D|P])([\d]*)([N|P])"""
@@ -42,10 +49,24 @@ def transform_policy(policy, nights, cost):
 
     for match in matches:
         if len(match) == 2:
-            result += 1 / int(match[0]) * cost
+            result += (int(match[0]) / 100) * cost
         else:
+            if match[0] == "0":
+                divider = 1
+            else:
+                divider = int(match[0])
+
             if match[3] == 'N':
-                result +=
+
+                if nights == 0:
+                    nights_divider = 1
+                else:
+                    nights_divider = nights
+
+                result += (1 / divider) * (int(match[2]) / nights_divider) * cost
+
+            else:
+                result += (1 / divider) * (int(match[2]) / 100) * cost
 
     return result
 
@@ -76,7 +97,7 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data
-    df, cancellation_labels = load_data("../datasets/agoda_cancellation_train.csv")
+    df = load_data("../datasets/agoda_cancellation_train.csv")
     # train_X, train_y, test_X, test_y = split_train_test(df, cancellation_labels)
 
     # # Fit model over data
