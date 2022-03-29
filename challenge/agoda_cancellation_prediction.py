@@ -4,6 +4,7 @@ from IMLearn.utils import split_train_test
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+import re
 
 
 def load_data(filename: str):
@@ -23,10 +24,30 @@ def load_data(filename: str):
     """
     # TODO - replace below code with any desired preprocessing
     full_data = pd.read_csv(filename).drop_duplicates()
-    features = full_data[["is_first_booking"]].fillna(value=0)
+    features = full_data[["cancellation_policy_code"]].fillna(value=0)
     labels = full_data["cancellation_datetime"].fillna(value="")
 
+    transform_policy("130D1N_45D100P")
+
     return features, labels
+
+
+regex = r"""([\d]*)([D|P])([\d]*)([N|P])"""
+
+
+def transform_policy(policy, nights, cost):
+    matches = re.findall(regex, policy)
+
+    result = 0
+
+    for match in matches:
+        if len(match) == 2:
+            result += 1 / int(match[0]) * cost
+        else:
+            if match[3] == 'N':
+                result +=
+
+    return result
 
 
 def evaluate_and_export(estimator, X: np.ndarray, filename: str):
@@ -61,9 +82,9 @@ if __name__ == '__main__':
     # # Fit model over data
     # estimator = AgodaCancellationEstimator().fit(df, train_y)
 
-    log_est = LogisticRegression(max_iter=100000000000000000000000000)
-    log_est.fit(df, cancellation_labels)
+    # log_est = LogisticRegression(max_iter=100000000000000000000000000)
+    # log_est.fit(df, cancellation_labels)
 
     #
     # # Store model predictions over test set
-    evaluate_and_export(log_est, df, "id1_id2_id3.csv")
+    # evaluate_and_export(log_est, df, "id1_id2_id3.csv")
