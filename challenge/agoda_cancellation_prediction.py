@@ -1,5 +1,3 @@
-import sklearn.neighbors
-
 from challenge.agoda_cancellation_estimator import AgodaCancellationEstimator
 # from IMLearn.base import BaseEstimator
 from IMLearn.utils import split_train_test
@@ -14,6 +12,7 @@ import datetime as dt
 import re
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.neural_network import MLPClassifier
 
 
 def load_data(filename: str):
@@ -282,7 +281,8 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data
-    df, responses = load_data("../datasets/agoda_cancellation_train.csv")
+    df, responses = load_data(
+        "C:/Users/yuval/Desktop/second_year/semester_B/IML.HUJI/datasets/agoda_cancellation_train.csv")
     train_X, train_y, test_X, test_y = split_train_test(df, responses)
 
     # Fit model over data
@@ -294,25 +294,39 @@ if __name__ == '__main__':
     model.fit(train_X, train_y)
     predictions = model.predict(test_X)
     std_y = np.std(responses)
-    for name, values in df.items():
-        array = values.to_numpy()
-        p_cor = np.cov(array, responses)[0, 1] / (np.std(array) * std_y)
-        print(f"{name} : {p_cor}")
+    # for name, values in df.items():
+    #     array = values.to_numpy()
+    #     p_cor = np.cov(array, responses)[0, 1] / (np.std(array) * std_y)
+    #     print(f"{name} : {p_cor}")
 
     # print("coef:")
     # for name, coef in zip(model., np.transpose(model.coef_)):
     #     print(f"{name}: {coef}")
 
-    print()
-    print(roc_auc_score(model.predict(test_X), test_y))
-
-    print(model.score(test_X, test_y))
+    # print()
+    # print(roc_auc_score(model.predict(test_X), test_y))
+    print("logistic")
+    print(confusion_matrix(test_y, predictions))
+    print(classification_report(test_y, predictions))
     # Store model predictions over test set
     real = load_test("../datasets/test_set_week_1.csv")
     evaluate_and_export(model, real, "id1_id2_id3.csv")
 
-    forest = RandomForestClassifier()
+    print("forest")
+    forest = RandomForestClassifier(n_estimators=1000)
     forest.fit(train_X, train_y)
-    print(forest.score(test_X, test_y))
     print(confusion_matrix(test_y, forest.predict(test_X)))
     print(classification_report(test_y, forest.predict(test_X)))
+
+    print("neural")
+    neural = MLPClassifier()
+    neural.fit(train_X, train_y)
+    print(confusion_matrix(test_y, neural.predict(test_X)))
+    print(classification_report(test_y, neural.predict(test_X)))
+
+    print("voting estimator")
+    our_estimator = AgodaCancellationEstimator()
+    our_estimator.fit(np.array(train_X), np.array(train_y))
+    result_est = our_estimator.predict(np.array(test_X))
+    print(confusion_matrix(test_y, result_est))
+    print(classification_report(test_y, result_est))

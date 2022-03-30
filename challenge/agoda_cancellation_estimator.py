@@ -2,7 +2,10 @@ from __future__ import annotations
 from typing import NoReturn
 from IMLearn.base import BaseEstimator
 import numpy as np
-import sklearn
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+from sklearn.naive_bayes import ComplementNB
 
 
 class AgodaCancellationEstimator(BaseEstimator):
@@ -10,7 +13,7 @@ class AgodaCancellationEstimator(BaseEstimator):
     An estimator for solving the Agoda Cancellation challenge
     """
 
-    def __init__(self) -> AgodaCancellationEstimator:
+    def __init__(self):
         """
         Instantiate an estimator for solving the Agoda Cancellation challenge
 
@@ -23,6 +26,10 @@ class AgodaCancellationEstimator(BaseEstimator):
 
         """
         super().__init__()
+        self.forest = RandomForestClassifier()
+        self.logistic = LogisticRegression(max_iter=100000)
+        self.neural = MLPClassifier()
+        # self.naive = ComplementNB()
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -40,7 +47,10 @@ class AgodaCancellationEstimator(BaseEstimator):
         -----
 
         """
-        pass
+        self.forest.fit(X, y)
+        self.logistic.fit(X, y)
+        self.neural.fit(X, y)
+        # self.naive.fit(X, y)
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -56,7 +66,14 @@ class AgodaCancellationEstimator(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return np.zeros(X.shape[0])
+        pred1 = self.forest.predict(X)
+        pred2 = self.logistic.predict(X)
+        pred3 = self.neural.predict(X)
+        # pred3 = self.naive.predict(X)
+        result = []
+        for (bol, bol1, bol2) in zip(pred1, pred2, pred3):
+            result.append((bol and (bol1 or bol2) or (bol1 and bol2)))
+        return np.array(result)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
