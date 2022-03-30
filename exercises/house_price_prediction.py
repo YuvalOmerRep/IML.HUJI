@@ -86,7 +86,7 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
             go.Scatter(x=X[feature], y=y,
                        mode="markers")).update_layout(title={
             "text": f"{feature} with Pearson Correlation "
-                    f"{pearson_correlation_values[index]}"}).write_image(f"{output_path}/{feature}.png")
+                    f"{pearson_correlation_values[index]}"}).write_image(f"{output_path}/graphs/{feature}.png")
 
 
 def pearson_correlation(X: np.array, y: np.array) -> float:
@@ -116,6 +116,12 @@ if __name__ == '__main__':
     regressor = LinearRegression()
     regressor.fit(np.array(x_train), np.array(y_train))
     print(regressor.loss(np.array(x_test), np.array(y_test)))
-    #
+
+    # results = []
     # for i in range(10, 101):
-    #     regressor.fit(x_train.sample(frac=))
+    #     loss_regressor = LinearRegression()
+    #     curr_x_train = x_train.sample(frac=i/100)
+    #     loss_regressor.fit(np.array(curr_x_train), np.array(y_train[curr_x_train.index]))
+    #     results.append(loss_regressor.loss(np.array(x_test), np.array(y_test)))
+    # print(results)
+    # px.line(x=[i for i in range(10, 101)], y=results).write_image(f"./graphs/loss.png")
