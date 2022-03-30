@@ -44,6 +44,7 @@ regex = r"""([\d]*)([D|P])([\d]*)([N|P])"""
 
 def transform_policy(policy, nights, cost):
     matches = re.findall(regex, policy)
+    print(cost)
 
     result = 0
 

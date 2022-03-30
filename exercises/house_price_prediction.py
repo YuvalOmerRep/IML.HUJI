@@ -29,6 +29,13 @@ def load_data(filename: str):
 
     full_data.drop(full_data[full_data.price < 1].index, inplace=True)
 
+    full_data["yr_built_adjusted"] = full_data["yr_built"] - full_data["yr_built"].min()
+
+    full_data["yr_renovated_adjusted"] = (full_data["yr_renovated"] - full_data["yr_built"].min())
+
+    full_data["yr_renovated_adjusted"] = full_data["yr_renovated_adjusted"].mask(
+        full_data["yr_renovated"] < full_data["yr_built"], full_data["yr_built_adjusted"], axis=0)
+
     labels = full_data["price"]
 
     # features = full_data[["bedrooms",
@@ -50,17 +57,7 @@ def load_data(filename: str):
     #                       "sqft_living15",
     #                       "sqft_lot15"]]
 
-    features = full_data[["bedrooms",
-                          "bathrooms",
-                          "sqft_living",
-                          "floors",
-                          "yr_built",
-                          "yr_renovated"]]
-
-    features["yr_renovated"] = features["yr_renovated"].mask(features["yr_renovated"] <= 0,
-                                                             features["yr_built"], axis=0)
-
-    # print(features["yr_renovated"])
+    features = full_data.drop(["yr_built", "yr_renovated", "id", "date", "price"], axis=1)
 
     return features, labels
 
@@ -105,13 +102,8 @@ if __name__ == '__main__':
     # Question 2 - Feature evaluation with respect to response
     # feature_evaluation(house_features, house_prices)
 
-    regressor = LinearRegression()
-
-    regressor.fit(house_features, house_prices)
-
     # Question 3 - Split samples into training- and testing sets.
     x_train, y_train, x_test, y_test = split_train_test(house_features, house_prices)
-
 
     # Question 4 - Fit model over increasing percentages of the overall training data
     # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
@@ -122,6 +114,8 @@ if __name__ == '__main__':
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
 
     regressor = LinearRegression()
+    regressor.fit(np.array(x_train), np.array(y_train))
+    print(regressor.loss(np.array(x_test), np.array(y_test)))
     #
     # for i in range(10, 101):
     #     regressor.fit(x_train.sample(frac=))
