@@ -10,9 +10,9 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 import re
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix, classification_report
-from sklearn.neural_network import MLPClassifier
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 
 
 def load_data(filename: str):
@@ -37,6 +37,10 @@ def load_data(filename: str):
                                          "checkin_date",
                                          "checkout_date",
                                          "hotel_live_date"]).drop_duplicates()
+
+    print(full_data.groupby("accommadation_type_name")['cancellation_datetime'].count())
+    print(full_data)
+
     full_data["cancellation_datetime"] = full_data["cancellation_datetime"].notna()
 
     full_data["guest_nationality_country_name_processed"] = full_data["guest_nationality_country_name"].map({
@@ -183,6 +187,8 @@ def load_test(filename: str):
         'Private Villa': 15, 'Boat / Cruise': 16, 'UNKNOWN': 21, 'Inn': 17, 'Lodge': 18, 'Homestay': 19,
         'Chalet': 20})
 
+
+
     full_data = full_data.drop([
         "request_nonesmoke",
         "request_latecheckin",
@@ -289,8 +295,8 @@ if __name__ == '__main__':
     # estimator = AgodaCancellationEstimator().fit(train_X, train_y)
     # model = KNeighborsClassifier()
     model = LogisticRegression(max_iter=100000)
-    # pipe = make_pipeline(StandardScaler(), model)
-    # estimator = pipe.fit(train_X, train_y)  # apply scaling on training data
+    # # pipe = make_pipeline(StandardScaler(), model)
+    # # estimator = pipe.fit(train_X, train_y)  # apply scaling on training data
     model.fit(train_X, train_y)
     predictions = model.predict(test_X)
     std_y = np.std(responses)
@@ -302,9 +308,10 @@ if __name__ == '__main__':
     # print("coef:")
     # for name, coef in zip(model., np.transpose(model.coef_)):
     #     print(f"{name}: {coef}")
-
+    #
     # print()
     # print(roc_auc_score(model.predict(test_X), test_y))
+    print("----classifiers----\n\n")
     print("logistic")
     print(confusion_matrix(test_y, predictions))
     print(classification_report(test_y, predictions))
@@ -330,3 +337,21 @@ if __name__ == '__main__':
     result_est = our_estimator.predict(np.array(test_X))
     print(confusion_matrix(test_y, result_est))
     print(classification_report(test_y, result_est))
+
+    # print("----regressions----\n\n")
+    #
+    # print()
+
+    # print("forest")
+    # forest_reg = RandomForestRegressor(n_estimators=1000)
+    # forest_reg.fit(train_X, train_y)
+    # print(confusion_matrix(test_y, forest_reg.predict(test_X)))
+    # print(classification_report(test_y, forest_reg.predict(test_X)))
+    #
+    # print("neural")
+    # neural_reg = MLPRegressor()
+    # neural_reg.fit(train_X, train_y)
+    # print(confusion_matrix(test_y, neural_reg.predict(test_X)))
+    # print(classification_report(test_y, neural_reg.predict(test_X)))
+    # print(forest_reg.predict(train_X))
+    # print(neural_reg.predict(train_X))
