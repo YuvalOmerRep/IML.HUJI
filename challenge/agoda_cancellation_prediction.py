@@ -38,10 +38,21 @@ def load_data(filename: str):
                                          "checkout_date",
                                          "hotel_live_date"]).drop_duplicates()
 
-    print(full_data.groupby("accommadation_type_name")['cancellation_datetime'].count())
-    print(full_data)
 
-    full_data["cancellation_datetime"] = full_data["cancellation_datetime"].notna()
+    full_data["cancellation_days_after_booking"] = \
+        (full_data['cancellation_datetime'].fillna(full_data["booking_datetime"]) -
+         full_data['booking_datetime']).dt.days
+
+
+    full_data["cancellation_days_after_booking"] = full_data["cancellation_days_after_booking"].mask(
+        full_data["cancellation_days_after_booking"] < 7, 100)
+
+    full_data["cancellation_days_after_booking"] = full_data["cancellation_days_after_booking"].mask(
+        (full_data["cancellation_days_after_booking"] < 31), True)
+
+    full_data["cancellation_days_after_booking"] = full_data["cancellation_days_after_booking"].mask(
+        full_data["cancellation_days_after_booking"] > 30, False)
+
 
     full_data["guest_nationality_country_name_processed"] = full_data["guest_nationality_country_name"].map({
         'China': 7, 'South Africa': 6, 'South Korea': 7, 'Singapore': 7, 'Thailand': 7, 'Argentina': 4,
@@ -100,8 +111,6 @@ def load_data(filename: str):
         "request_earlycheckin"
     ], axis=1)
 
-    full_data = full_data.dropna()
-
     full_data['TimeDiff'] = (full_data['checkin_date'] - full_data['booking_datetime']).dt.days
 
     full_data["cancellation_policy_numbered"] = \
@@ -114,14 +123,13 @@ def load_data(filename: str):
     full_data["checkout_date"] = full_data["checkout_date"].map(dt.datetime.toordinal)  # .fillna(0)
     full_data["hotel_live_date"] = full_data["hotel_live_date"].map(dt.datetime.toordinal)  # .fillna(0)
 
-    labels = full_data["cancellation_datetime"]
+    labels = full_data["cancellation_days_after_booking"]
     features = full_data[[
         "TimeDiff",
         "cancellation_policy_numbered",
         "hotel_star_rating",
         "no_of_children",
         "no_of_adults",
-        "original_selling_amount",
         "is_first_booking",
         "special_requests",
         "hotel_area_code",
@@ -130,6 +138,7 @@ def load_data(filename: str):
         "accommadation_type_name_proccessed",
         "guest_nationality_country_name_processed",
     ]]
+
     return features, labels
 
 
@@ -145,6 +154,10 @@ def load_test(filename: str):
 
     full_data["original_payment_type_proccessed"] = full_data["original_payment_type"].map({
         'Invoice': 1, 'Credit Card': 0, 'Gift Card': 2})
+
+    full_data["cancellation_days_after_booking"] = \
+        (full_data['cancellation_datetime'].fillna(full_data["booking_datetime"]) -
+         full_data['booking_datetime']).dt.days
 
     full_data["guest_nationality_country_name_processed"] = full_data["guest_nationality_country_name"].map({
         'China': 7, 'South Africa': 6, 'South Korea': 7, 'Singapore': 7, 'Thailand': 7, 'Argentina': 4,
@@ -186,8 +199,6 @@ def load_test(filename: str):
         'Tent': 11, 'Resort Villa': 12, 'Love Hotel': 13, 'Holiday Park / Caravan Park': 14,
         'Private Villa': 15, 'Boat / Cruise': 16, 'UNKNOWN': 21, 'Inn': 17, 'Lodge': 18, 'Homestay': 19,
         'Chalet': 20})
-
-
 
     full_data = full_data.drop([
         "request_nonesmoke",
@@ -251,11 +262,13 @@ def transform_policy(policy, nights, cost):
                     nights_divider = 1
                 else:
                     nights_divider = nights
-
-                result += (1 / divider) * (int(match[2]) / nights_divider) * cost
+                policy_cost = divider * (int(match[2]) / nights_divider) * cost
 
             else:
-                result += (1 / divider) * (int(match[2]) / 100) * cost
+                policy_cost = divider * (int(match[2]) / 100) * cost
+
+            if policy_cost > result:
+                result = policy_cost
 
     return result
 
@@ -289,17 +302,18 @@ if __name__ == '__main__':
     # Load data
     df, responses = load_data(
         "C:/Users/yuval/Desktop/second_year/semester_B/IML.HUJI/datasets/agoda_cancellation_train.csv")
+
     train_X, train_y, test_X, test_y = split_train_test(df, responses)
 
     # Fit model over data
     # estimator = AgodaCancellationEstimator().fit(train_X, train_y)
     # model = KNeighborsClassifier()
-    model = LogisticRegression(max_iter=100000)
+    # model = LogisticRegression(max_iter=100000)
     # # pipe = make_pipeline(StandardScaler(), model)
     # # estimator = pipe.fit(train_X, train_y)  # apply scaling on training data
-    model.fit(train_X, train_y)
-    predictions = model.predict(test_X)
-    std_y = np.std(responses)
+    # model.fit(train_X, train_y)
+    # predictions = model.predict(test_X)
+    # std_y = np.std(responses)
     # for name, values in df.items():
     #     array = values.to_numpy()
     #     p_cor = np.cov(array, responses)[0, 1] / (np.std(array) * std_y)
@@ -313,30 +327,30 @@ if __name__ == '__main__':
     # print(roc_auc_score(model.predict(test_X), test_y))
     print("----classifiers----\n\n")
     print("logistic")
-    print(confusion_matrix(test_y, predictions))
-    print(classification_report(test_y, predictions))
+    # print(confusion_matrix(test_y, predictions))
+    # print(classification_report(test_y, predictions))
     # Store model predictions over test set
-    real = load_test("../datasets/test_set_week_1.csv")
-    evaluate_and_export(model, real, "id1_id2_id3.csv")
+    # real = load_test("../datasets/test_set_week_1.csv")
+    # evaluate_and_export(model, real, "id1_id2_id3.csv")
 
-    print("forest")
-    forest = RandomForestClassifier(n_estimators=1000)
-    forest.fit(train_X, train_y)
-    print(confusion_matrix(test_y, forest.predict(test_X)))
-    print(classification_report(test_y, forest.predict(test_X)))
-
-    print("neural")
-    neural = MLPClassifier()
-    neural.fit(train_X, train_y)
-    print(confusion_matrix(test_y, neural.predict(test_X)))
-    print(classification_report(test_y, neural.predict(test_X)))
-
-    print("voting estimator")
-    our_estimator = AgodaCancellationEstimator()
-    our_estimator.fit(np.array(train_X), np.array(train_y))
-    result_est = our_estimator.predict(np.array(test_X))
-    print(confusion_matrix(test_y, result_est))
-    print(classification_report(test_y, result_est))
+    # print("forest")
+    # forest = RandomForestClassifier(n_estimators=1000)
+    # forest.fit(train_X, train_y)
+    # print(confusion_matrix(test_y, forest.predict(test_X)))
+    # print(classification_report(test_y, forest.predict(test_X)))
+    #
+    # print("neural")
+    # neural = MLPClassifier()
+    # neural.fit(train_X, train_y)
+    # print(confusion_matrix(test_y, neural.predict(test_X)))
+    # print(classification_report(test_y, neural.predict(test_X)))
+    #
+    # print("voting estimator")
+    # our_estimator = AgodaCancellationEstimator()
+    # our_estimator.fit(np.array(train_X), np.array(train_y))
+    # result_est = our_estimator.predict(np.array(test_X))
+    # print(confusion_matrix(test_y, result_est))
+    # print(classification_report(test_y, result_est))
 
     # print("----regressions----\n\n")
     #
@@ -348,10 +362,8 @@ if __name__ == '__main__':
     # print(confusion_matrix(test_y, forest_reg.predict(test_X)))
     # print(classification_report(test_y, forest_reg.predict(test_X)))
     #
-    # print("neural")
-    # neural_reg = MLPRegressor()
-    # neural_reg.fit(train_X, train_y)
-    # print(confusion_matrix(test_y, neural_reg.predict(test_X)))
-    # print(classification_report(test_y, neural_reg.predict(test_X)))
-    # print(forest_reg.predict(train_X))
-    # print(neural_reg.predict(train_X))
+
+    est = AgodaCancellationEstimator()
+    est.fit(np.array(train_X), np.array(train_y.astype(bool)))
+    print(confusion_matrix(test_y.astype(bool), est.predict(np.array(test_X))))
+    print(classification_report(test_y.astype(bool), est.predict(np.array(test_X))))

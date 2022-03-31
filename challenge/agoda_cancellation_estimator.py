@@ -5,8 +5,9 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
-from sklearn.naive_bayes import ComplementNB
 
+
+PROB_LIMIT = 0.002
 
 class AgodaCancellationEstimator(BaseEstimator):
     """
@@ -26,10 +27,10 @@ class AgodaCancellationEstimator(BaseEstimator):
 
         """
         super().__init__()
+        # classification mode
         self.forest = RandomForestClassifier()
         self.logistic = LogisticRegression(max_iter=100000)
         self.neural = MLPClassifier()
-        # self.naive = ComplementNB()
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -47,10 +48,10 @@ class AgodaCancellationEstimator(BaseEstimator):
         -----
 
         """
+        # classification mode
         self.forest.fit(X, y)
         self.logistic.fit(X, y)
         self.neural.fit(X, y)
-        # self.naive.fit(X, y)
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -66,13 +67,34 @@ class AgodaCancellationEstimator(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        pred1 = self.forest.predict(X)
-        pred2 = self.logistic.predict(X)
-        pred3 = self.neural.predict(X)
-        # pred3 = self.naive.predict(X)
+
+        # classification mode
+        # pred1 = self.forest.predict(X)
+        # pred2 = self.logistic.predict(X)
+        # pred3 = self.neural.predict(X)
+        pred1 = self.forest.predict_proba(X)
+        pred2 = self.logistic.predict_proba(X)
+        pred3 = self.neural.predict_proba(X)
         result = []
+
         for (bol, bol1, bol2) in zip(pred1, pred2, pred3):
-            result.append((bol and (bol1 or bol2) or (bol1 and bol2)))
+            if bol[1] > PROB_LIMIT:
+                vote1 = False
+            else:
+                vote1 = True
+
+            if bol1[1] > PROB_LIMIT:
+                vote2 = False
+            else:
+                vote2 = True
+
+            if bol2[1] > PROB_LIMIT:
+                vote3 = False
+            else:
+                vote3 = True
+
+            result.append((vote1 and (vote2 or vote3) or (vote2 and vote3)))
+
         return np.array(result)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
@@ -92,4 +114,10 @@ class AgodaCancellationEstimator(BaseEstimator):
         loss : float
             Performance under loss function
         """
-        pass
+        y_pred = self.predict(X)
+        result = 0
+        for (pred, true) in zip(y_pred, y):
+            if pred == true:
+                result += 1
+
+        return result / y.size
