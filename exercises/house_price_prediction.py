@@ -36,26 +36,11 @@ def load_data(filename: str):
     full_data["yr_renovated_adjusted"] = full_data["yr_renovated_adjusted"].mask(
         full_data["yr_renovated"] < full_data["yr_built"], full_data["yr_built_adjusted"], axis=0)
 
-    labels = full_data["price"]
+    full_data["zipcode"] = full_data["zipcode"].astype(int)
 
-    # features = full_data[["bedrooms",
-    #                       "bathrooms",
-    #                       "sqft_living",
-    #                       "sqft_lot",
-    #                       "floors",
-    #                       "waterfront",
-    #                       "view",
-    #                       "condition",
-    #                       "grade",
-    #                       "sqft_above",
-    #                       "sqft_basement",
-    #                       "yr_built",
-    #                       "yr_renovated",
-    #                       "lat",
-    #                       "zipcode",
-    #                       "long",
-    #                       "sqft_living15",
-    #                       "sqft_lot15"]]
+    full_data = pd.get_dummies(full_data, prefix="zipcode_", columns=["zipcode"])
+
+    labels = full_data["price"]
 
     features = full_data.drop(["yr_built", "yr_renovated", "id", "date", "price"], axis=1)
 
@@ -117,11 +102,11 @@ if __name__ == '__main__':
     regressor.fit(np.array(x_train), np.array(y_train))
     print(regressor.loss(np.array(x_test), np.array(y_test)))
 
-    # results = []
-    # for i in range(10, 101):
-    #     loss_regressor = LinearRegression()
-    #     curr_x_train = x_train.sample(frac=i/100)
-    #     loss_regressor.fit(np.array(curr_x_train), np.array(y_train[curr_x_train.index]))
-    #     results.append(loss_regressor.loss(np.array(x_test), np.array(y_test)))
-    # print(results)
-    # px.line(x=[i for i in range(10, 101)], y=results).write_image(f"./graphs/loss.png")
+    results = []
+    for i in range(10, 101):
+        loss_regressor = LinearRegression()
+        curr_x_train = x_train.sample(frac=i/100)
+        loss_regressor.fit(np.array(curr_x_train), np.array(y_train[curr_x_train.index]))
+        results.append(loss_regressor.loss(np.array(x_test), np.array(y_test)))
+    print(results)
+    px.line(x=[i for i in range(10, 101)], y=results).write_image(f"./graphs/loss.png")
