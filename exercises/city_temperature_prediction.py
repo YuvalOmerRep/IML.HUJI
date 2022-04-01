@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
+import plotly.graph_objects as go
 
 pio.templates.default = "simple_white"
 
@@ -51,9 +52,16 @@ if __name__ == '__main__':
     israel_data = data[["Temp", "DayOfYear", "Year", "Month"]][data["Country"] == "Israel"]
     israel_data["Year"] = israel_data["Year"].astype(str)
 
-    px.scatter(israel_data, x="DayOfYear", y="Temp", color="Year").write_image("./graphs/DaysToTemp.png")
+    # px.scatter(israel_data, x="DayOfYear", y="Temp", color="Year").write_image("./graphs/DaysToTemp.png")
 
-    px.bar(israel_data[["Month", "Temp"]].groupby("Month").agg("std")).write_image("./graphs/MonthStd.png")
+    # px.bar(israel_data[["Month", "Temp"]].groupby("Month").agg("std")).write_image("./graphs/MonthStd.png")
+
+    data_group = data.groupby(["Country", "Month"])[["Temp"]].agg(["mean", "std"])
+
+    data_group.columns = ["Temp_mean", "Temp_std"]
+    data_group = data_group.reset_index()
+
+    px.line(data_group,  x="Month", y="Temp_mean", error_y="Temp_std").write_image("./graphs/std.png")
 
     # Question 3 - Exploring differences between countries
     # raise NotImplementedError()
