@@ -5,8 +5,25 @@ import pandas as pd
 import datetime as dt
 import re
 from sklearn.metrics import confusion_matrix, classification_report
-import sys
-from challenge.one_at_a_time import one_at_a
+import random
+
+
+def sample_together(n, X, y):
+    rows = random.sample(np.arange(0, len(X.index)).tolist(), n)
+    return X.iloc[rows, ], y.iloc[rows, ]
+
+
+def undersample(X, y, under=1):
+    y_min = y.loc[y == under]
+    y_max = y.loc[y != under]
+    X_min = X.filter(y_min.index, axis=0)
+    X_max = X.filter(y_max.index, axis=0)
+
+    X_under, y_under = sample_together(len(y_min.index), X_max, y_max)
+
+    X = pd.concat([X_under, X_min])
+    y = pd.concat([y_under, y_min])
+    return X, y
 
 
 def load_data(filename: str):
@@ -23,7 +40,6 @@ def load_data(filename: str):
     2) Tuple of pandas.DataFrame and Series
     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
     """
-    # TODO - replace below code with any desired preprocessing
     full_data = pd.read_csv(filename,
                             parse_dates=["cancellation_datetime",
                                          "booking_datetime",
@@ -48,7 +64,12 @@ def load_data(filename: str):
 
     labels = p_full_data["cancellation_days_after_booking"]
 
-    return features, labels
+    features_under, labels_under = undersample(features, labels)
+
+    features_leftovers = features.drop(features_under.index)
+    labels_leftover = labels.drop(labels_under.index)
+
+    return features_under, labels_under, features_leftovers, labels_leftover
 
 
 def preprocessing(full_data):
@@ -116,10 +137,10 @@ def preprocessing(full_data):
                                                    x["TimeDiff"],
                                                    x["original_selling_amount"]), axis=1)
 
-    full_data["booking_datetime"] = full_data["booking_datetime"].map(dt.datetime.toordinal)  # .fillna(0)
-    full_data["checkin_date"] = full_data["checkin_date"].map(dt.datetime.toordinal)  # .fillna(0)
-    full_data["checkout_date"] = full_data["checkout_date"].map(dt.datetime.toordinal)  # .fillna(0)
-    full_data["hotel_live_date"] = full_data["hotel_live_date"].map(dt.datetime.toordinal)  # .fillna(0)
+    full_data["booking_datetime"] = full_data["booking_datetime"].map(dt.datetime.toordinal)
+    full_data["checkin_date"] = full_data["checkin_date"].map(dt.datetime.toordinal)
+    full_data["checkout_date"] = full_data["checkout_date"].map(dt.datetime.toordinal)
+    full_data["hotel_live_date"] = full_data["hotel_live_date"].map(dt.datetime.toordinal)
 
     p_full_data = full_data
 
@@ -151,6 +172,7 @@ def load_test(filename: str):
     features, p_full_data = preprocessing(full_data)
 
     return features
+
 
 regex = r"""([\d])([D|P])([\d])([N|P])"""
 
@@ -213,36 +235,16 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data
-    df, responses = load_data(
+    df, responses, X_leftovers, y_leftovers = load_data(
         "C:/Users/yuval/Desktop/second_year/semester_B/IML.HUJI/datasets/agoda_cancellation_train.csv")
 
-    train_X, train_y, test_X, test_y = split_train_test(df, responses)
+    train_X, train_y, test_X, test_y = split_train_test(df, responses, train_proportion=0.75)
 
-    # Fit model over data
-    # estimator = AgodaCancellationEstimator().fit(train_X, train_y)
-    # model = KNeighborsClassifier()
-    # model = LogisticRegression(max_iter=100000)
-    # # pipe = make_pipeline(StandardScaler(), model)
-    # # estimator = pipe.fit(train_X, train_y)  # apply scaling on training data
-    # model.fit(train_X, train_y)
-    # predictions = model.predict(test_X)
-    # std_y = np.std(responses)
-    # for name, values in df.items():
-    #     array = values.to_numpy()
-    #     p_cor = np.cov(array, responses)[0, 1] / (np.std(array) * std_y)
-    #     print(f"{name} : {p_cor}")
-
-    # print("coef:")
-    # for name, coef in zip(model., np.transpose(model.coef_)):
-    #     print(f"{name}: {coef}")
-    #
-    # print()
-    # print(roc_auc_score(model.predict(test_X), test_y))
-    #
     est = AgodaCancellationEstimator()
     est.fit(np.array(train_X), np.array(train_y.astype(bool)))
     print(confusion_matrix(test_y.astype(bool), est.predict(np.array(test_X))))
     print(classification_report(test_y.astype(bool), est.predict(np.array(test_X))))
+
     # Store model predictions over test set
-    # real = load_test("../datasets/test_set_week_1.csv")
-    # evaluate_and_export(est, real.to_numpy(), "312245087_312162464_316514314.csv")
+    real = load_test("../datasets/test_set_week_1.csv")
+    evaluate_and_export(est, real.to_numpy(), "312245087_312162464_316514314.csv")

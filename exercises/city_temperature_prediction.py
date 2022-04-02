@@ -63,7 +63,7 @@ if __name__ == '__main__':
     data_group.columns = ["Temp_mean", "Temp_std"]
     data_group = data_group.reset_index()
 
-    # px.line(data_group,  x="Month", y="Temp_mean", error_y="Temp_std", color="Country").write_image("./graphs/std.png")
+    px.line(data_group,  x="Month", y="Temp_mean", error_y="Temp_std", color="Country").write_image("./graphs/std.png")
 
     # Question 4 - Fitting model for different values of `k`
     train_X, train_y, test_X, test_y = split_train_test(israel_data["DayOfYear"], israel_data["Temp"])
