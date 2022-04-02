@@ -26,7 +26,7 @@ def load_data(filename: str):
     """
     full_data = pd.read_csv(filename, parse_dates=["Date"]).drop_duplicates()
 
-    full_data = full_data.drop(full_data[full_data["Temp"] < -20].index)
+    full_data = full_data.drop(full_data[full_data["Temp"] < -40].index)
 
     full_data["DayOfYear"] = full_data["Date"].apply(lambda x: x.timetuple().tm_yday - 1)
 
@@ -56,18 +56,26 @@ if __name__ == '__main__':
 
     # px.bar(israel_data[["Month", "Temp"]].groupby("Month").agg("std")).write_image("./graphs/MonthStd.png")
 
+    # Question 3 - Exploring differences between countries
+
     data_group = data.groupby(["Country", "Month"])[["Temp"]].agg(["mean", "std"])
 
     data_group.columns = ["Temp_mean", "Temp_std"]
     data_group = data_group.reset_index()
 
-    px.line(data_group,  x="Month", y="Temp_mean", error_y="Temp_std").write_image("./graphs/std.png")
-
-    # Question 3 - Exploring differences between countries
-    # raise NotImplementedError()
+    # px.line(data_group,  x="Month", y="Temp_mean", error_y="Temp_std", color="Country").write_image("./graphs/std.png")
 
     # Question 4 - Fitting model for different values of `k`
-    # raise NotImplementedError()
+    train_X, train_y, test_X, test_y = split_train_test(israel_data["DayOfYear"], israel_data["Temp"])
+
+    loss = []
+    for i in range(1, 11):
+        model = PolynomialFitting(i)
+        model.fit(np.array(train_X), np.array(train_y))
+        loss.append(round(model.loss(np.array(test_X), np.array(test_y)), 2))
+
+    print(loss)
+    px.bar(x=[i for i in range(1, 11)], y=loss).write_image("./graphs/ks.png")
 
     # Question 5 - Evaluating fitted model on different countries
     # raise NotImplementedError()

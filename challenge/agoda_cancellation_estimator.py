@@ -7,14 +7,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 
 
-PROB_LIMIT = 0.002
-
 class AgodaCancellationEstimator(BaseEstimator):
     """
     An estimator for solving the Agoda Cancellation challenge
     """
 
-    def __init__(self):
+    def __init__(self, prob_limit):
         """
         Instantiate an estimator for solving the Agoda Cancellation challenge
 
@@ -31,6 +29,7 @@ class AgodaCancellationEstimator(BaseEstimator):
         self.forest = RandomForestClassifier()
         self.logistic = LogisticRegression(max_iter=100000)
         self.neural = MLPClassifier()
+        self.prob_limit = prob_limit
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -68,30 +67,26 @@ class AgodaCancellationEstimator(BaseEstimator):
             Predicted responses of given samples
         """
 
-        # classification mode
-        # pred1 = self.forest.predict(X)
-        # pred2 = self.logistic.predict(X)
-        # pred3 = self.neural.predict(X)
         pred1 = self.forest.predict_proba(X)
         pred2 = self.logistic.predict_proba(X)
         pred3 = self.neural.predict_proba(X)
         result = []
 
         for (bol, bol1, bol2) in zip(pred1, pred2, pred3):
-            if bol[1] > PROB_LIMIT:
-                vote1 = False
-            else:
+            if bol[1] > self.prob_limit:
                 vote1 = True
-
-            if bol1[1] > PROB_LIMIT:
-                vote2 = False
             else:
+                vote1 = False
+
+            if bol1[1] > self.prob_limit:
                 vote2 = True
-
-            if bol2[1] > PROB_LIMIT:
-                vote3 = False
             else:
+                vote2 = False
+
+            if bol2[1] > self.prob_limit:
                 vote3 = True
+            else:
+                vote3 = False
 
             result.append((vote1 and (vote2 or vote3) or (vote2 and vote3)))
 
