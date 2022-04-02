@@ -64,12 +64,12 @@ def load_data(filename: str):
 
     labels = p_full_data["cancellation_days_after_booking"]
 
-    features_under, labels_under = undersample(features, labels)
+    # features_under, labels_under = undersample(features, labels)
 
-    features_leftovers = features.drop(features_under.index)
-    labels_leftover = labels.drop(labels_under.index)
+    # features_leftovers = features.drop(features_under.index)
+    # labels_leftover = labels.drop(labels_under.index)
 
-    return features_under, labels_under, features_leftovers, labels_leftover
+    return features, labels
 
 
 def preprocessing(full_data):
@@ -235,7 +235,7 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data
-    df, responses, X_leftovers, y_leftovers = load_data(
+    df, responses = load_data(
         "C:/Users/yuval/Desktop/second_year/semester_B/IML.HUJI/datasets/agoda_cancellation_train.csv")
 
     train_X, train_y, test_X, test_y = split_train_test(df, responses, train_proportion=0.75)
