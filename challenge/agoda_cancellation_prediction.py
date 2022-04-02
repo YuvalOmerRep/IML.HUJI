@@ -5,6 +5,8 @@ import pandas as pd
 import datetime as dt
 import re
 from sklearn.metrics import confusion_matrix, classification_report
+import sys
+from challenge.one_at_a_time import one_at_a
 
 
 def load_data(filename: str):
@@ -54,6 +56,7 @@ def preprocessing(full_data):
                                                                           'Pay at Check-in': 0})
     full_data["original_payment_type_proccessed"] = full_data["original_payment_type"].map({
         'Invoice': 1, 'Credit Card': 0, 'Gift Card': 2})
+
     full_data["guest_nationality_country_name_processed"] = full_data["guest_nationality_country_name"].map({
         'China': 7, 'South Africa': 6, 'South Korea': 7, 'Singapore': 7, 'Thailand': 7, 'Argentina': 4,
         'Taiwan': 7, 'Saudi Arabia': 2, 'Mexico': 3, 'Malaysia': 7, 'Germany': 0, 'New Zealand': 5,
@@ -81,17 +84,20 @@ def preprocessing(full_data):
         'British Indian Ocean Territory': 7, 'Andorra': 0, 'Bhutan': 7, 'Togo': 6, 'Belarus': 0,
         'New Caledonia': 5, 'Isle Of Man': 0, 'Burkina Faso': 6, 'Iceland': 0, 'Croatia': 0,
         'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4})
+
     full_data["accommadation_type_name_proccessed"] = full_data["accommadation_type_name"].map({
         'Hotel': 0, 'Resort': 1, 'Serviced Apartment': 2, 'Guest House / Bed & Breakfast': 3,
         'Hostel': 4, 'Capsule Hotel': 5, 'Home': 6, 'Apartment': 7, 'Bungalow': 8, 'Motel': 9, 'Ryokan': 10,
         'Tent': 11, 'Resort Villa': 12, 'Love Hotel': 13, 'Holiday Park / Caravan Park': 14,
         'Private Villa': 15, 'Boat / Cruise': 16, 'UNKNOWN': 21, 'Inn': 17, 'Lodge': 18, 'Homestay': 19,
         'Chalet': 20})
+
     full_data["special_requests"] = full_data["request_nonesmoke"].fillna(0) + full_data["request_latecheckin"].fillna(
         0) \
                                     + full_data["request_highfloor"].fillna(0) + full_data["request_largebed"].fillna(0) \
                                     + full_data["request_twinbeds"].fillna(0) + full_data["request_airport"].fillna(0) \
                                     + full_data["request_earlycheckin"].fillna(0)
+
     full_data = full_data.drop([
         "request_nonesmoke",
         "request_latecheckin",
@@ -102,16 +108,21 @@ def preprocessing(full_data):
         "request_earlycheckin",
         "hotel_chain_code",
     ], axis=1)
+
     full_data['TimeDiff'] = (full_data['checkin_date'] - full_data['booking_datetime']).dt.days
+
     full_data["cancellation_policy_numbered"] = \
         full_data.apply(lambda x: transform_policy(x["cancellation_policy_code"],
                                                    x["TimeDiff"],
                                                    x["original_selling_amount"]), axis=1)
+
     full_data["booking_datetime"] = full_data["booking_datetime"].map(dt.datetime.toordinal)  # .fillna(0)
     full_data["checkin_date"] = full_data["checkin_date"].map(dt.datetime.toordinal)  # .fillna(0)
     full_data["checkout_date"] = full_data["checkout_date"].map(dt.datetime.toordinal)  # .fillna(0)
     full_data["hotel_live_date"] = full_data["hotel_live_date"].map(dt.datetime.toordinal)  # .fillna(0)
+
     p_full_data = full_data
+
     features = full_data[[
         "TimeDiff",
         "cancellation_policy_numbered",
@@ -124,8 +135,9 @@ def preprocessing(full_data):
         "original_selling_amount",
         "charge_option_numbered",
         "accommadation_type_name_proccessed",
-        "guest_nationality_country_name_processed",
+        "guest_nationality_country_name_processed"
     ]]
+
     return features, p_full_data
 
 
@@ -226,14 +238,11 @@ if __name__ == '__main__':
     #
     # print()
     # print(roc_auc_score(model.predict(test_X), test_y))
-
-    for i in range(1, 30):
-        print(f"probability limit at {i/100}")
-        est = AgodaCancellationEstimator(i/100)
-        est.fit(np.array(train_X), np.array(train_y.astype(bool)))
-        print(confusion_matrix(test_y.astype(bool), est.predict(np.array(test_X))))
-        print(classification_report(test_y.astype(bool), est.predict(np.array(test_X))))
-
+    #
+    est = AgodaCancellationEstimator()
+    est.fit(np.array(train_X), np.array(train_y.astype(bool)))
+    print(confusion_matrix(test_y.astype(bool), est.predict(np.array(test_X))))
+    print(classification_report(test_y.astype(bool), est.predict(np.array(test_X))))
     # Store model predictions over test set
     # real = load_test("../datasets/test_set_week_1.csv")
-    # evaluate_and_export(est, real.to_numpy(), "id1_id2_id3.csv")
+    # evaluate_and_export(est, real.to_numpy(), "312245087_312162464_316514314.csv")

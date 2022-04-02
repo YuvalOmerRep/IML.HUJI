@@ -7,12 +7,16 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 
 
+PROB_LIMIT = 0.05
+PROB_LIMIT1 = 0.06
+PROB_LIMIT2 = 0.4
+
 class AgodaCancellationEstimator(BaseEstimator):
     """
     An estimator for solving the Agoda Cancellation challenge
     """
 
-    def __init__(self, prob_limit):
+    def __init__(self):
         """
         Instantiate an estimator for solving the Agoda Cancellation challenge
 
@@ -25,11 +29,9 @@ class AgodaCancellationEstimator(BaseEstimator):
 
         """
         super().__init__()
-        # classification mode
         self.forest = RandomForestClassifier()
         self.logistic = LogisticRegression(max_iter=100000)
         self.neural = MLPClassifier()
-        self.prob_limit = prob_limit
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -47,7 +49,6 @@ class AgodaCancellationEstimator(BaseEstimator):
         -----
 
         """
-        # classification mode
         self.forest.fit(X, y)
         self.logistic.fit(X, y)
         self.neural.fit(X, y)
@@ -73,17 +74,17 @@ class AgodaCancellationEstimator(BaseEstimator):
         result = []
 
         for (bol, bol1, bol2) in zip(pred1, pred2, pred3):
-            if bol[1] > self.prob_limit:
+            if bol[1] > PROB_LIMIT:
                 vote1 = True
             else:
                 vote1 = False
 
-            if bol1[1] > self.prob_limit:
+            if bol1[1] > PROB_LIMIT1:
                 vote2 = True
             else:
                 vote2 = False
 
-            if bol2[1] > self.prob_limit:
+            if bol2[1] > PROB_LIMIT2:
                 vote3 = True
             else:
                 vote3 = False
