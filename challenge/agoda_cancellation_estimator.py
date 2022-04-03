@@ -5,11 +5,13 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import confusion_matrix, classification_report
 
 
-PROB_LIMIT = 0.15
-PROB_LIMIT1 = 0.03
-PROB_LIMIT2 = 0.15
+PROB_LIMIT = 0.1
+PROB_LIMIT1 = 0.1
+PROB_LIMIT2 = 0.1
 
 
 class AgodaCancellationEstimator(BaseEstimator):
@@ -29,6 +31,7 @@ class AgodaCancellationEstimator(BaseEstimator):
         self.forest = RandomForestClassifier()
         self.logistic = LogisticRegression(max_iter=100000)
         self.neural = MLPClassifier()
+        self.gradient = GradientBoostingClassifier()
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -45,8 +48,9 @@ class AgodaCancellationEstimator(BaseEstimator):
         self.forest.fit(X, y)
         self.logistic.fit(X, y)
         self.neural.fit(X, y)
+        self.gradient.fit(X, y)
 
-    def _predict(self, X: np.ndarray) -> np.ndarray:
+    def _predict(self, X: np.ndarra) -> np.ndarray:
         """
         Predict responses for given samples using fitted estimator
         Parameters
@@ -61,9 +65,9 @@ class AgodaCancellationEstimator(BaseEstimator):
 
         pred1 = self.forest.predict_proba(X)
         pred2 = self.logistic.predict_proba(X)
-        pred3 = self.neural.predict_proba(X)
-        result = []
+        pred3 = self.gradient.predict_proba(X)
 
+        result = []
         for (bol, bol1, bol2) in zip(pred1, pred2, pred3):
             if bol[1] > PROB_LIMIT:
                 vote1 = True

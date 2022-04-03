@@ -231,15 +231,18 @@ if __name__ == '__main__':
 
     # Load data
     df, responses = load_data(
-        "C:/Users/yuval/Desktop/second_year/semester_B/IML.HUJI/datasets/agoda_cancellation_train.csv")
+        "../datasets/agoda_cancellation_train.csv")
 
     train_X, train_y, test_X, test_y = split_train_test(df, responses, train_proportion=0.75)
 
     est = AgodaCancellationEstimator()
     est.fit(np.array(train_X), np.array(train_y.astype(bool)))
+
+    est._predict(np.array(test_X))
+
     print(confusion_matrix(test_y.astype(bool), est.predict(np.array(test_X))))
     print(classification_report(test_y.astype(bool), est.predict(np.array(test_X))))
 
     # Store model predictions over test set
     real = load_test("../datasets/test_set_week_1.csv")
-    evaluate_and_export(est, real.to_numpy(), "312245087_312162464_316514314.csv")
+    evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
