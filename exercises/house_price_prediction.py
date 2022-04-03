@@ -5,7 +5,6 @@ from typing import NoReturn
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 import plotly.io as pio
 
 pio.templates.default = "simple_white"
@@ -42,7 +41,7 @@ def load_data(filename: str):
 
     labels = full_data["price"]
 
-    features = full_data.drop(["yr_built", "yr_renovated", "id", "date", "price"], axis=1)
+    features = full_data.drop(["yr_built", "yr_renovated", "id", "date", "price", "sqft_living15", "sqft_lot15"], axis=1)
 
     return features, labels
 
@@ -85,7 +84,7 @@ if __name__ == '__main__':
         "../datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
-    # feature_evaluation(house_features, house_prices)
+    feature_evaluation(house_features, house_prices)
 
     # Question 3 - Split samples into training- and testing sets.
     x_train, y_train, x_test, y_test = split_train_test(house_features, house_prices)
@@ -103,10 +102,40 @@ if __name__ == '__main__':
     print(regressor.loss(np.array(x_test), np.array(y_test)))
 
     results = []
+    std = []
+
     for i in range(10, 101):
-        loss_regressor = LinearRegression()
-        curr_x_train = x_train.sample(frac=i/100)
-        loss_regressor.fit(np.array(curr_x_train), np.array(y_train[curr_x_train.index]))
-        results.append(loss_regressor.loss(np.array(x_test), np.array(y_test)))
+        mid_result = []
+
+        for j in range(10):
+            loss_regressor = LinearRegression()
+
+            curr_x_train = x_train.sample(frac=i/100)
+
+            loss_regressor.fit(np.array(curr_x_train), np.array(y_train[curr_x_train.index]))
+
+            mid_result.append(loss_regressor.loss(np.array(x_test), np.array(y_test)))
+
+        results.append(np.mean(mid_result))
+        std.append(np.std(mid_result))
+
+    con_plus = np.array(results) + 2 * np.array(std)
+
+    con_minus = np.array(results) - 2 * np.array(std)
+
     print(results)
-    px.line(x=[i for i in range(10, 101)], y=results).write_image(f"./graphs/loss.png")
+
+    precent = [i for i in range(10, 101)]
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=precent, y=results, mode="markers+lines", marker={"color": "orange"}, showlegend=False))
+
+    fig.add_traces([
+        go.Scatter(x=precent, y=con_plus, fill="tonexty", line={"color": "lightgrey"}, showlegend=False),
+        go.Scatter(x=precent, y=con_minus, fill="tonexty", line={"color": "lightgrey"}, showlegend=False),
+    ])
+
+    fig.update_layout(title="Mean MSE Loss as function of different train percent",
+                      xaxis_title="percent of training sample", yaxis_title="MSE Loss")
+
+    fig.write_image(f"./graphs/loss.png")
