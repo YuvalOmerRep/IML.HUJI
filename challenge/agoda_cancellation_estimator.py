@@ -7,9 +7,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 
 
-PROB_LIMIT = 0.15
-PROB_LIMIT1 = 0.03
-PROB_LIMIT2 = 0.15
+PROB_LIMIT = 0.14
+PROB_LIMIT1 = 0.14
+PROB_LIMIT2 = 0.14
 
 
 class AgodaCancellationEstimator(BaseEstimator):

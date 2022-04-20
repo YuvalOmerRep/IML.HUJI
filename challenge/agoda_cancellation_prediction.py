@@ -104,7 +104,7 @@ def preprocessing(full_data):
         'Venezuela': 4, 'Georgia': 2, 'South Sudan': 6, 'Gabon': 6, 'Aruba': 4, 'Latvia': 0,
         'British Indian Ocean Territory': 7, 'Andorra': 0, 'Bhutan': 7, 'Togo': 6, 'Belarus': 0,
         'New Caledonia': 5, 'Isle Of Man': 0, 'Burkina Faso': 6, 'Iceland': 0, 'Croatia': 0,
-        'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4})
+        'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4}).fillna(8)
 
     full_data["accommadation_type_name_proccessed"] = full_data["accommadation_type_name"].map({
         'Hotel': 0, 'Resort': 1, 'Serviced Apartment': 2, 'Guest House / Bed & Breakfast': 3,
@@ -246,5 +246,5 @@ if __name__ == '__main__':
     print(classification_report(test_y.astype(bool), est.predict(np.array(test_X))))
 
     # Store model predictions over test set
-    real = load_test("../datasets/test_set_week_1.csv")
+    real = load_test("../datasets/test_set_week_2.csv")
     evaluate_and_export(est, real.to_numpy(), "312245087_312162464_316514314.csv")

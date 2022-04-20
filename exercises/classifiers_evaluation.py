@@ -36,16 +36,24 @@ def run_perceptron():
     Create a line plot that shows the perceptron algorithm's training loss values (y-axis)
     as a function of the training iterations (x-axis).
     """
-    for n, f in [("Linearly Separable", "linearly_separable.npy"), ("Linearly Inseparable", "linearly_inseparable.npy")]:
+    for n, f in [("Linearly Separable", "linearly_separable.npy"),
+                 ("Linearly Inseparable", "linearly_inseparable.npy")]:
         # Load dataset
-        raise NotImplementedError()
+        X, y = load_dataset(f"../datasets/{f}")
 
         # Fit Perceptron and record loss in each fit iteration
         losses = []
-        raise NotImplementedError()
+
+        def callback(prece: Perceptron, x: np.ndarray, response: int):
+            losses.append(prece.loss(X, y))
+
+        Perceptron(callback=callback).fit(X, y)
 
         # Plot figure of loss as function of fitting iteration
-        raise NotImplementedError()
+        px.line(x=[i for i in range(len(losses))],
+                y=losses,
+                title=f"Loss as function of iterations on {n} data")\
+            .update_layout(xaxis_title="Iteration num", yaxis_title="Loss").write_image(f"./graphs/{n}.png")
 
 
 def get_ellipse(mu: np.ndarray, cov: np.ndarray):
@@ -79,25 +87,25 @@ def compare_gaussian_classifiers():
     """
     for f in ["gaussian1.npy", "gaussian2.npy"]:
         # Load dataset
-        raise NotImplementedError()
+        X, y = load_dataset(f"../datasets/{f}")
 
         # Fit models and predict over training set
-        raise NotImplementedError()
+        LDA().fit(X, y)
 
         # Plot a figure with two suplots, showing the Gaussian Naive Bayes predictions on the left and LDA predictions
         # on the right. Plot title should specify dataset used and subplot titles should specify algorithm and accuracy
         # Create subplots
         from IMLearn.metrics import accuracy
-        raise NotImplementedError()
+        # raise NotImplementedError()
 
         # Add traces for data-points setting symbols and colors
-        raise NotImplementedError()
+        # raise NotImplementedError()
 
         # Add `X` dots specifying fitted Gaussians' means
-        raise NotImplementedError()
+        # raise NotImplementedError()
 
         # Add ellipses depicting the covariances of the fitted Gaussians
-        raise NotImplementedError()
+        # raise NotImplementedError()
 
 
 if __name__ == '__main__':
