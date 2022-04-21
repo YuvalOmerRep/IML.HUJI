@@ -52,7 +52,7 @@ def run_perceptron():
         # Plot figure of loss as function of fitting iteration
         px.line(x=[i for i in range(len(losses))],
                 y=losses,
-                title=f"Loss as function of iterations on {n} data")\
+                title=f"Loss as function of iterations on {n} data") \
             .update_layout(xaxis_title="Iteration num", yaxis_title="Loss").write_image(f"./graphs/{n}.png")
 
 
@@ -85,30 +85,51 @@ def compare_gaussian_classifiers():
     """
     Fit both Gaussian Naive Bayes and LDA classifiers on both gaussians1 and gaussians2 datasets
     """
+    name = 1
     for f in ["gaussian1.npy", "gaussian2.npy"]:
         # Load dataset
         X, y = load_dataset(f"../datasets/{f}")
 
         # Fit models and predict over training set
-        LDA().fit(X, y)
+        modelLDA = LDA()
+        modelNG = GaussianNaiveBayes()
+
+        modelLDA.fit(X, y)
+        modelNG.fit(X, y)
 
         # Plot a figure with two suplots, showing the Gaussian Naive Bayes predictions on the left and LDA predictions
         # on the right. Plot title should specify dataset used and subplot titles should specify algorithm and accuracy
         # Create subplots
+        # and add traces for data-points setting symbols and colors
         from IMLearn.metrics import accuracy
-        # raise NotImplementedError()
+        pred = modelLDA.predict(X)
+        pred1 = modelNG.predict(X)
 
-        # Add traces for data-points setting symbols and colors
-        # raise NotImplementedError()
+        fig = px.scatter(x=X[:, 0], y=X[:, 1], color=pred.astype(str),
+                         symbol=y.astype(str),
+                         title=f"guassisn{name} predicted using LDA with accuracy: {accuracy(y, pred)}")
+
+        fig1 = px.scatter(x=X[:, 0], y=X[:, 1], color=pred1.astype(str),
+                         symbol=y.astype(str),
+                         title=f"guassisn{name} predicted using Naive Gaussian with accuracy: {accuracy(y, pred1)}")
 
         # Add `X` dots specifying fitted Gaussians' means
-        # raise NotImplementedError()
+        fig.add_trace(go.Scatter(x=modelLDA.mu_[:, 0], y=modelLDA.mu_[:, 1], mode="markers", marker=dict(
+            color='Black', symbol="x")))
+
+        fig1.add_trace(go.Scatter(x=modelNG.mu_[:, 0], y=modelNG.mu_[:, 1], mode="markers", marker=dict(
+            color='Black', symbol="x")))
 
         # Add ellipses depicting the covariances of the fitted Gaussians
-        # raise NotImplementedError()
+        for mn in modelLDA.mu_:
+            fig.add_trace(get_ellipse(mn, modelLDA.cov_))
+
+        fig.write_image(f"./graphs/guassian{name}LDA.png")
+        fig1.write_image(f"./graphs/guassian{name}NG.png")
+        name += 1
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    run_perceptron()
+    # run_perceptron()
     compare_gaussian_classifiers()
