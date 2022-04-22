@@ -73,7 +73,7 @@ class GaussianNaiveBayes(BaseEstimator):
         results = np.zeros(X.shape[0])
 
         for index, sample in enumerate(X):
-            result_likelihood = 0
+            result_likelihood = np.NINF
 
             for i in range(len(self.classes_)):
                 sub_calc = 0
@@ -85,6 +85,7 @@ class GaussianNaiveBayes(BaseEstimator):
 
                 if calc > result_likelihood:
                     results[index] = self.classes_[i]
+                    result_likelihood = calc
 
         return results
 
