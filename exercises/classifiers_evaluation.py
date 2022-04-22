@@ -105,35 +105,40 @@ def compare_gaussian_classifiers():
         pred = modelLDA.predict(X)
         pred1 = modelNG.predict(X)
 
-        fig = px.scatter(x=X[:, 0], y=X[:, 1], color=pred.astype(str),
-                         symbol=y.astype(str),
-                         title=f"guassisn{name} predicted using LDA with accuracy: {accuracy(y, pred)}")
+        main_fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=(f"predictions{name} using LDA with accuracy: {round(accuracy(y, pred), 2)}",
+                            f"predictions{name} using Naive Gaussian with accuracy:{round(accuracy(y, pred1), 2)}"))
 
-        fig1 = px.scatter(x=X[:, 0], y=X[:, 1], color=pred1.astype(str),
-                         symbol=y.astype(str),
-                         title=f"guassisn{name} predicted using Naive Gaussian with accuracy: {accuracy(y, pred1)}")
+        main_fig.add_traces([go.Scatter(mode='markers', x=X[:, 0], y=X[:, 1],
+                                        marker=dict(color=pred, symbol=y, colorscale="Bluered")),
+                             go.Scatter(mode='markers', x=X[:, 0], y=X[:, 1],
+                                        marker=dict(color=pred1, symbol=y, colorscale="Bluered"))],
+                            rows=[1, 1], cols=[1, 2])
 
         # Add `X` dots specifying fitted Gaussians' means
-        fig.add_trace(go.Scatter(x=modelLDA.mu_[:, 0], y=modelLDA.mu_[:, 1], mode="markers", marker=dict(
-            color='Black', symbol="x")))
+        main_fig.add_trace(go.Scatter(x=modelLDA.mu_[:, 0], y=modelLDA.mu_[:, 1], mode="markers", marker=dict(
+            color='Black', symbol="x"), name="mean"), row=1, col=1)
 
-        fig1.add_trace(go.Scatter(x=modelNG.mu_[:, 0], y=modelNG.mu_[:, 1], mode="markers", marker=dict(
-            color='Black', symbol="x")))
+        main_fig.add_trace(go.Scatter(x=modelNG.mu_[:, 0], y=modelNG.mu_[:, 1], mode="markers", marker=dict(
+            color='Black', symbol="x"), showlegend=False), row=1, col=2)
 
         # Add ellipses depicting the covariances of the fitted Gaussians
         for mn in modelLDA.mu_:
-            fig.add_trace(get_ellipse(mn, modelLDA.cov_))
+            main_fig.add_trace(get_ellipse(mn, modelLDA.cov_), row=1, col=1)
 
         for i in range(len(modelNG.mu_)):
-            fig1.add_trace(get_ellipse(modelNG.mu_[i], np.array([[modelNG.vars_[i][0], 0],
-                                                                 [0, modelNG.vars_[i][1]]])))
+            main_fig.add_trace(get_ellipse(modelNG.mu_[i], np.array([[modelNG.vars_[i][0], 0],
+                                                                     [0, modelNG.vars_[i][1]]])), row=1, col=2)
 
-        fig.write_image(f"./graphs/guassian{name}LDA.png")
-        fig1.write_image(f"./graphs/guassian{name}NG.png")
+        main_fig.update_annotations(font_size=11)
+
+
+        main_fig.write_image(f"./graphs/guassian{name}LDA_and_GN.png")
         name += 1
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # run_perceptron()
+    run_perceptron()
     compare_gaussian_classifiers()
