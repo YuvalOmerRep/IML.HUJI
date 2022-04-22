@@ -81,19 +81,8 @@ class LDA(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        results = np.zeros(X.shape[0])
-
-        for index, sample in enumerate(X):
-            result_likelihood = 0
-
-            for i in range(len(self.classes_)):
-                calc = np.log(self.pi_[i]) + (sample.transpose() @ self._cov_inv @ self.mu_[i]) \
-                       - 0.5 * (self.mu_[i] @ self._cov_inv @ np.reshape(self.mu_[i], (X.shape[1], 1)))
-
-                if calc > result_likelihood:
-                    results[index] = self.classes_[i]
-
-        return results
+        return np.argmax(np.log(self.pi_) + (X @ self._cov_inv @ np.transpose(self.mu_)) -
+                         0.5 * np.diag(self.mu_ @ self._cov_inv @ np.transpose(self.mu_)), axis=1)
 
     def likelihood(self, X: np.ndarray) -> np.ndarray:
         """
@@ -113,14 +102,8 @@ class LDA(BaseEstimator):
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
 
-        result = np.zeros((X.shape[0], len(self.classes_)))
-
-        for index, sample in enumerate(X):
-            for i in range(len(self.classes_)):
-                result[index, i] = np.log(self.pi_[i]) + (sample.transpose() @ self._cov_inv @ self.mu_[i]) \
-                                   - 0.5 * (self.mu_[i] @ self._cov_inv @ np.reshape(self.mu_[i], (X.shape[1], 1)))
-
-        return result
+        return np.log(self.pi_) + (X @ self._cov_inv @ np.transpose(self.mu_)) - \
+            0.5 * np.diag(self.mu_ @ self._cov_inv @ np.transpose(self.mu_))
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

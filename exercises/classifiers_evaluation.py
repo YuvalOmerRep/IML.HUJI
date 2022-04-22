@@ -124,6 +124,10 @@ def compare_gaussian_classifiers():
         for mn in modelLDA.mu_:
             fig.add_trace(get_ellipse(mn, modelLDA.cov_))
 
+        for i in range(len(modelNG.mu_)):
+            fig1.add_trace(get_ellipse(modelNG.mu_[i], np.array([[modelNG.vars_[i][0], 0],
+                                                                 [0, modelNG.vars_[i][1]]])))
+
         fig.write_image(f"./graphs/guassian{name}LDA.png")
         fig1.write_image(f"./graphs/guassian{name}NG.png")
         name += 1
