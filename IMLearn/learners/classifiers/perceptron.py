@@ -80,18 +80,21 @@ class Perceptron(BaseEstimator):
         if self.include_intercept_:
             data = np.hstack((np.ones((X.shape[0], 1)), X))
 
-        self.coefs_ = np.zeros((data.shape[1], 1))
+        self.coefs_ = np.zeros(data.shape[1])
 
         for i in range(self.max_iter_):
             calc = data @ self.coefs_
-            curr_result = (np.sign(calc) + (calc == 0)) * y.reshape(len(y), 1)
+
+            calc = np.reshape(np.sign(calc) + (calc == 0), X.shape[0])
+
+            curr_result = calc * y
 
             pos = np.where(curr_result < 1)
 
             if not len(pos[0]):
                 break
 
-            self.coefs_ = self.coefs_ + (y[pos[0][0]] * np.reshape(data[pos[0][0]], (len(data[pos[0][0]]), 1)))
+            self.coefs_ = self.coefs_ + (y[pos[0][0]] * data[pos[0][0]])
 
             self.callback_(self, data[pos[0][0]], y[pos[0][0]])
 
@@ -116,7 +119,7 @@ class Perceptron(BaseEstimator):
 
         calc = data @ self.coefs_
         
-        return np.sign(calc) + (calc == 0)
+        return np.reshape(np.sign(calc) + (calc == 0), X.shape[0])
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -135,4 +138,8 @@ class Perceptron(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
+        data = X
+        if self.include_intercept_:
+            data = data = np.hstack((np.ones((X.shape[0], 1)), X))
+
         return misclassification_error(y, self.predict(X))

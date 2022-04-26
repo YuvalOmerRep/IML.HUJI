@@ -78,7 +78,7 @@ class GaussianNaiveBayes(BaseEstimator):
             for i in range(len(self.classes_)):
                 sub_calc = 0
                 for j in range(X.shape[1]):
-                    sub_calc += np.log(1/(np.sqrt(self.vars_[i, j]) * 2 * np.pi)) - \
+                    sub_calc += -np.log(np.sqrt(self.vars_[i, j]) * 2 * np.pi) - \
                                 (pow(sample[j] - self.mu_[i, j], 2)) / (2 * self.vars_[i, j])
 
                 calc = np.log(self.pi_[i]) + sub_calc
@@ -115,7 +115,7 @@ class GaussianNaiveBayes(BaseEstimator):
 
                 sub_calc = 0
                 for j in range(X.shape[1]):
-                    sub_calc += np.log(1 / (np.sqrt(self.vars_[i, j]) * 2 * np.pi)) - \
+                    sub_calc += -np.log(np.sqrt(self.vars_[i, j]) * 2 * np.pi) - \
                                 (pow(sample[j] - self.mu_[i, j], 2)) / (2 * self.vars_[i, j])
 
                 result[index, i] = np.log(self.pi_[i]) + sub_calc

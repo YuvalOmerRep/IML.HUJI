@@ -48,6 +48,7 @@ class LDA(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
+
         data = np.zeros(X.shape)
 
         self.classes_, counts = np.unique(y, return_counts=True)
@@ -59,7 +60,7 @@ class LDA(BaseEstimator):
                 self.mu_[num, i] = np.mean(X[(y == clas)][:, i])
 
         for i in range(X.shape[0]):
-            data[i] = X[i] - self.mu_[int(y[i])]
+            data[i] = X[i] - self.mu_[np.take(self.classes_, y[i])]
 
         self.cov_ = np.cov(data, rowvar=False, ddof=len(self.classes_))
 
@@ -81,9 +82,7 @@ class LDA(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return np.take(self.classes_, np.argmax(np.log(self.pi_) + (X @ self._cov_inv @ np.transpose(self.mu_)) -
-                                                0.5 * np.diag(self.mu_ @ self._cov_inv @ np.transpose(self.mu_)),
-                                                axis=1))  # using np.take to maintain generality on class labels
+        return np.take(self.classes_, np.argmax(self.likelihood(X), axis=1))  # using np.take to maintain generality on class labels
 
     def likelihood(self, X: np.ndarray) -> np.ndarray:
         """

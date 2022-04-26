@@ -36,7 +36,7 @@ def misclassification_error(y_true: np.ndarray, y_pred: np.ndarray, normalize: b
     -------
     Misclassification of given predictions
     """
-    result = (y_true.reshape((y_pred.shape[0], 1)) != y_pred).sum()
+    result = (y_true != y_pred).sum()
 
     if normalize:
         return result / (y_true.shape[0])
