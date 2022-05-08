@@ -6,6 +6,7 @@ import re
 from sklearn.metrics import confusion_matrix, classification_report
 import random
 from sklearn.model_selection import train_test_split
+from sklearn.ensemble import VotingClassifier
 
 
 def sample_together(n, X, y):
@@ -101,6 +102,7 @@ def load_prev_data(filename: str):
 def preprocessing(full_data):
     full_data["charge_option_numbered"] = full_data["charge_option"].map({"Pay Now": 2, "Pay Later": 1,
                                                                           'Pay at Check-in': 0})
+
     full_data["original_payment_type_proccessed"] = full_data["original_payment_type"].map({
         'Invoice': 1, 'Credit Card': 0, 'Gift Card': 2})
 
@@ -261,19 +263,59 @@ if __name__ == '__main__':
 
     df_prev, responses_prev = load_prev_data("../datasets/test_set_week_1.csv")
 
-    df = df.append(df_prev)
+    df1 = pd.concat([df_prev, df], ignore_index=True)
 
-    responses = responses.append(responses_prev)
+    responses1 = pd.concat([responses_prev, responses], ignore_index=True)
 
     train_X, test_X, train_y, test_y = train_test_split(df, responses, test_size=0.25)
 
-    est = AgodaCancellationEstimator()
-    est.fit(np.array(train_X), np.array(train_y.astype(bool)))
+    est = AgodaCancellationEstimator(balanced=True)
+    # est.fit(np.array(train_X), np.array(train_y.astype(bool)))
+    est.fit(np.array(df), np.array(responses.astype(bool)))
 
-    est.set_probs(0.3, 0.02, 0.2)
+    best_prob = []
+    best_macro = 0
 
-    print(confusion_matrix(test_y.astype(bool), est.predict(np.array(test_X))))
-    print(classification_report(test_y.astype(bool), est.predict(np.array(test_X))))
+    for i in range(1, 50):
+        for j in range(1, 50):
+            for h in range(1, 50):
+                est.set_probs(h/100, j/100, i/100)
+                rep = classification_report(responses_prev.astype(bool), est.predict(np.array(df_prev)), output_dict=True)
+                if rep["macro avg"]["f1-score"] > best_macro:
+                    best_prob = [h/100, j/100, i/100]
+                    best_macro = rep["macro avg"]["f1-score"]
+
+    print(best_prob)
+    est.set_probs(best_prob[0], best_prob[1], best_prob[2])
+
+    est1 = AgodaCancellationEstimator()
+
+    est1.set_probs(0.3, 0.02, 0.2)
+
+    est1.fit(np.array(df), np.array(responses.astype(bool)))
+
+    est2 = AgodaCancellationEstimator()
+
+    df, responses = undersample(df, responses)
+
+    est2.fit(df, responses)
+
+    vote1 = est.predict(np.array(df_prev))
+    vote2 = est1.predict(np.array(df_prev))
+    vote3 = est2.predict(np.array(df_prev))
+
+    vote = (vote1 + vote2 + vote3 >= 2)
+
+    print(confusion_matrix(responses_prev.astype(bool), vote))
+    print(classification_report(responses_prev.astype(bool), vote))
+
+    # print(confusion_matrix(test_y.astype(bool), est.predict(np.array(test_X))))
+    # print(classification_report(test_y.astype(bool), est.predict(np.array(test_X))))
+    print(confusion_matrix(responses_prev.astype(bool), est.predict(np.array(df_prev))))
+    print(classification_report(responses_prev.astype(bool), est.predict(np.array(df_prev))))
+
+    print(confusion_matrix(responses_prev.astype(bool), est1.predict(np.array(df_prev))))
+    print(classification_report(responses_prev.astype(bool), est1.predict(np.array(df_prev))))
 
     # Store model predictions over test set
     real = load_test("../datasets/test_set_week_5.csv")

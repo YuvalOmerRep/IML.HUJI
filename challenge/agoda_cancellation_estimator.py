@@ -6,6 +6,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.linear_model import SGDClassifier
 
 
 class AgodaCancellationEstimator(BaseEstimator):
@@ -13,7 +15,7 @@ class AgodaCancellationEstimator(BaseEstimator):
     An estimator for solving the Agoda Cancellation challenge
     """
 
-    def __init__(self):
+    def __init__(self, balanced: bool = False):
         """
         Instantiate an estimator for solving the Agoda Cancellation challenge
         Parameters
@@ -26,10 +28,17 @@ class AgodaCancellationEstimator(BaseEstimator):
         self.PROB_LIMIT1 = 0.5
         self.PROB_LIMIT2 = 0.5
 
-        self.forest = RandomForestClassifier(class_weight={1: 1, 0: 0.2})
-        self.logistic = LogisticRegression(max_iter=100000)
+        if balanced:
+            self.forest = RandomForestClassifier(class_weight="balanced")
+            self.logistic = LogisticRegression(class_weight="balanced")
+            # self.SGD = SGDClassifier(class_weight="balanced", loss="modified_huber")
+        else:
+            self.forest = RandomForestClassifier()
+            self.logistic = LogisticRegression()
+            # self.SGD = SGDClassifier(loss="modified_huber")
         self.gradient = GradientBoostingClassifier()
         # self.neural = MLPClassifier()
+
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -45,6 +54,7 @@ class AgodaCancellationEstimator(BaseEstimator):
         """
         self.forest.fit(X, y)
         self.logistic.fit(X, y)
+        # self.SGD.fit(X, y)
         self.gradient.fit(X, y)
         # self.neural.fit(X, y)
 
@@ -65,6 +75,7 @@ class AgodaCancellationEstimator(BaseEstimator):
         pred2 = self.logistic.predict_proba(X)
         # pred2 = self.neural.predict_proba(X)
         pred3 = self.gradient.predict_proba(X)
+        # pred3 = self.SGD.predict_proba(X)
 
         result = []
         for (bol, bol1, bol2) in zip(pred1, pred2, pred3):
