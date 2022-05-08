@@ -1,11 +1,11 @@
 from challenge.agoda_cancellation_estimator import AgodaCancellationEstimator
-from IMLearn.utils import split_train_test
 import numpy as np
 import pandas as pd
 import datetime as dt
 import re
 from sklearn.metrics import confusion_matrix, classification_report
 import random
+from sklearn.model_selection import train_test_split
 
 
 def sample_together(n, X, y):
@@ -72,6 +72,32 @@ def load_data(filename: str):
     return features, labels
 
 
+def load_prev_data(filename: str):
+    """
+        Load Agoda booking cancellation dataset
+        Parameters
+        ----------
+        filename: str
+            Path to house prices dataset
+        Returns
+        -------
+        Design matrix and response vector in either of the following formats:
+        1) Single dataframe with last column representing the response
+        2) Tuple of pandas.DataFrame and Series
+        3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
+        """
+    full_data = pd.read_csv(filename,
+                            parse_dates=["booking_datetime",
+                                         "checkin_date",
+                                         "checkout_date",
+                                         "hotel_live_date"]).drop_duplicates()
+
+    features, p_full_data = preprocessing(full_data)
+
+    labels = p_full_data["cancellation_bool"]
+
+    return features, labels
+
 def preprocessing(full_data):
     full_data["charge_option_numbered"] = full_data["charge_option"].map({"Pay Now": 2, "Pay Later": 1,
                                                                           'Pay at Check-in': 0})
@@ -104,7 +130,7 @@ def preprocessing(full_data):
         'Venezuela': 4, 'Georgia': 2, 'South Sudan': 6, 'Gabon': 6, 'Aruba': 4, 'Latvia': 0,
         'British Indian Ocean Territory': 7, 'Andorra': 0, 'Bhutan': 7, 'Togo': 6, 'Belarus': 0,
         'New Caledonia': 5, 'Isle Of Man': 0, 'Burkina Faso': 6, 'Iceland': 0, 'Croatia': 0,
-        'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4})
+        'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4}).fillna(8)
 
     full_data["accommadation_type_name_proccessed"] = full_data["accommadation_type_name"].map({
         'Hotel': 0, 'Resort': 1, 'Serviced Apartment': 2, 'Guest House / Bed & Breakfast': 3,
@@ -233,16 +259,22 @@ if __name__ == '__main__':
     df, responses = load_data(
         "../datasets/agoda_cancellation_train.csv")
 
-    train_X, train_y, test_X, test_y = split_train_test(df, responses, train_proportion=0.75)
+    df_prev, responses_prev = load_prev_data("../datasets/test_set_week_1.csv")
+
+    df = df.append(df_prev)
+
+    responses = responses.append(responses_prev)
+
+    train_X, test_X, train_y, test_y = train_test_split(df, responses, test_size=0.25)
 
     est = AgodaCancellationEstimator()
     est.fit(np.array(train_X), np.array(train_y.astype(bool)))
 
-    est._predict(np.array(test_X))
+    est.set_probs(0.3, 0.02, 0.2)
 
     print(confusion_matrix(test_y.astype(bool), est.predict(np.array(test_X))))
     print(classification_report(test_y.astype(bool), est.predict(np.array(test_X))))
 
     # Store model predictions over test set
-    real = load_test("../datasets/test_set_week_1.csv")
+    real = load_test("../datasets/test_set_week_5.csv")
     evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
