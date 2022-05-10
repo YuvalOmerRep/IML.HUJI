@@ -50,21 +50,33 @@ class AdaBoost(BaseEstimator):
             Responses of input data to fit to
         """
         self.weights_ = []
-        self.weights_.append(np.full(X.shape[0], 1 / X.shape[0]))
+
+        self.D_ = np.full(len(y), 1 / len(y))
 
         self.models_ = []
 
         for i in range(self.iterations_):
             new_model = self.wl_()
+
             self.models_.append(new_model)
-            new_model.fit(X, self.weights_[len(self.weights_) - 1] * y)
+
+            new_model.fit(X, self.D_ * y)
+
             pred = new_model.predict(X)
 
-            w = 0.5 * np.log((1 / misclassification_error(y, pred)) - 1)
+            weighted_loss = np.sum(self.D_ * (pred != y))
 
-            new_weight = self.weights_[len(self.weights_) - 1] * np.exp(-y * w * pred)
+            if weighted_loss == 0:
+                w = 0
 
-            self.weights_.append(new_weight / np.sum(new_weight))
+            else:
+                w = 0.5 * np.log((1 / weighted_loss) - 1)
+
+            self.D_ = self.D_ * np.exp((-y * w * pred))
+
+            self.D_ = self.D_ / np.sum(self.D_)
+
+            self.weights_.append(w)
 
     def _predict(self, X):
         """
@@ -80,8 +92,7 @@ class AdaBoost(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        pred = np.sum(self.weights_ * [model.predict(X) for model in self.models_], axis=0)
-        return np.sign(pred) + (pred == 0)
+        return self.partial_predict(X, len(self.weights_))
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -100,7 +111,7 @@ class AdaBoost(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        return misclassification_error(y, self._predict(X))
+        return self.partial_loss(X, y, len(self.weights_))
 
     def partial_predict(self, X: np.ndarray, T: int) -> np.ndarray:
         """
@@ -119,8 +130,24 @@ class AdaBoost(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        pred = np.sum(self.weights_[:T+1] * [model.predict(X) for model in self.models_[:T+1]], axis=0)
-        return np.sign(pred) + (pred == 0)
+        if T == 0:
+            return np.array([])
+
+        if T > len(self.models_):
+            T = len(self.models_)
+
+        preds = np.array(self.models_[0].predict(X))
+
+        for i in range(1, T):
+            if i == 1:
+                preds = np.stack((preds, self.models_[i].predict(X)), axis=-1)
+            else:
+                preds = np.concatenate((preds, np.reshape(self.models_[i].predict(X), (X.shape[0], 1))), axis=1)
+
+        if T > 1:
+            preds = np.sum(self.weights_[:T] * preds, axis=1)
+
+        return np.sign(preds) + (preds == 0)
 
     def partial_loss(self, X: np.ndarray, y: np.ndarray, T: int) -> float:
         """

@@ -4,6 +4,7 @@ from ...base import BaseEstimator
 import numpy as np
 from itertools import product
 from ...metrics import misclassification_error
+from copy import deepcopy
 
 
 class DecisionStump(BaseEstimator):
@@ -41,19 +42,19 @@ class DecisionStump(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        threshes_losses_one = np.apply_along_axis(self._find_threshold, 1, X, y, 1)
-        threshes_losses_minus = np.apply_along_axis(self._find_threshold, 1, X, y, -1)
+        threshes_losses_one = np.apply_along_axis(self._find_threshold, 0, X, y, 1)
+        threshes_losses_minus = np.apply_along_axis(self._find_threshold, 0, X, y, -1)
 
-        one_best = np.argmin(threshes_losses_one[:, 1], axis=1)
-        minus_best = np.argmin(threshes_losses_minus[:, 1], axis=1)
+        one_best = np.argmin(threshes_losses_one[:, 1])
+        minus_best = np.argmin(threshes_losses_minus[:, 1])
 
         if threshes_losses_one[one_best][1] > threshes_losses_minus[minus_best][1]:
             self.threshold_ = threshes_losses_minus[minus_best][0]
-            self.j_ = threshes_losses_minus[minus_best][1]
+            self.j_ = minus_best
             self.sign_ = -1
         else:
             self.threshold_ = threshes_losses_one[minus_best][0]
-            self.j_ = threshes_losses_one[minus_best][1]
+            self.j_ = one_best
             self.sign_ = 1
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
@@ -78,9 +79,10 @@ class DecisionStump(BaseEstimator):
         Feature values strictly below threshold are predicted as `-sign` whereas values which equal
         to or above the threshold are predicted as `sign`
         """
-        feature = X[:, self.j_]
+        feature = deepcopy(X[:, self.j_])
         feature[feature >= self.threshold_] = self.sign_
         feature[feature < self.threshold_] = -self.sign_
+
         return feature
 
     def _find_threshold(self, values: np.ndarray, labels: np.ndarray, sign: int) -> Tuple[float, float]:
@@ -117,22 +119,12 @@ class DecisionStump(BaseEstimator):
 
         values, labels = values[sort_indexes], labels[sort_indexes]
 
-        labels_sign, labels_minus = np.abs(np.where(np.sign(labels) != 1, 0, labels)), \
-                                    np.abs(np.where(np.sign(labels) == 1, 0, labels))
+        loss = np.insert(np.cumsum(np.abs(np.where(np.sign(labels) != 1, 0, labels)), 0), 0, 0)[:-1] +\
+               np.flip(np.cumsum(np.flip(np.abs(np.where(np.sign(labels) == 1, 0, labels))), 0))
 
-        labels_sign = np.insert(np.cumsum(labels_sign), 0, 0)
+        best_ind = np.argmin(loss)
 
-        best_value = 0
-        best_thresh_loss = np.inf
-
-        for index, value in enumerate(values):
-            curr_loss = labels_sign[index] + np.sum(labels_minus[index:])
-
-            if curr_loss < best_thresh_loss:
-                best_thresh_loss = curr_loss
-                best_value = value
-
-        return best_value, best_thresh_loss
+        return values[best_ind], loss[best_ind]
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

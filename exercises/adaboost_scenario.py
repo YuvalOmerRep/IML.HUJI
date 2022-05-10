@@ -1,10 +1,12 @@
 import numpy as np
 from typing import Tuple
-from IMLearn.learners.metalearners.adaboost import AdaBoost
-from IMLearn.learners.classifiers import DecisionStump
+from IMLearn.metalearners.adaboost import AdaBoost
+from IMLearn.learners.classifiers.decision_stump import DecisionStump
 from utils import *
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
+from math import floor
 
 
 def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
@@ -42,20 +44,37 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
 
     # Question 1: Train- and test errors of AdaBoost in noiseless case
+    model = AdaBoost(DecisionStump, n_learners)
+    model.fit(train_X, train_y)
+    print(train_X)
 
+    px.scatter(x=[i for i in range(1, n_learners + 1)],
+               y=[model.partial_loss(test_X, test_y, i) for i in range(1, n_learners + 1)]).add_trace(
+        go.Scatter(x=[i for i in range(1, n_learners + 1)],
+                   y=[model.partial_loss(train_X, train_y, i) for i in range(1, n_learners + 1)])).write_image(
+        f"./loss_per_iterations.png")
 
     # Question 2: Plotting decision surfaces
     T = [5, 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
-    raise NotImplementedError()
+
+    fig = make_subplots(2, 2)
+
+    for index, i in enumerate(T):
+        fig.add_trace(go.Scatter(mode="markers", x=test_X[:, 0], y=test_X[:, 1],
+                                 marker=dict(color=model.partial_predict(test_X, i),
+                                             symbol=(test_y == 1), colorscale="Bluered")),
+                      row=floor(index / 2) + 1, col=index % 2 + 1)
+
+    fig.write_image(f"./decision_surface.png")
 
     # Question 3: Decision surface of best performing ensemble
-    raise NotImplementedError()
+    # raise NotImplementedError()
 
     # Question 4: Decision surface with weighted samples
-    raise NotImplementedError()
+    # raise NotImplementedError()
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    raise NotImplementedError()
+    fit_and_evaluate_adaboost(0, 250)
