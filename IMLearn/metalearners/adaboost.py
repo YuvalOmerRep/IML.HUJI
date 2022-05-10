@@ -65,6 +65,7 @@ class AdaBoost(BaseEstimator):
             pred = new_model.predict(X)
 
             weighted_loss = np.sum(self.D_ * (pred != y))
+            w = 0
 
             if weighted_loss == 0:
                 w = 0
@@ -136,16 +137,10 @@ class AdaBoost(BaseEstimator):
         if T > len(self.models_):
             T = len(self.models_)
 
-        preds = np.array(self.models_[0].predict(X))
+        preds = self.models_[0].predict(X)
 
         for i in range(1, T):
-            if i == 1:
-                preds = np.stack((preds, self.models_[i].predict(X)), axis=-1)
-            else:
-                preds = np.concatenate((preds, np.reshape(self.models_[i].predict(X), (X.shape[0], 1))), axis=1)
-
-        if T > 1:
-            preds = np.sum(self.weights_[:T] * preds, axis=1)
+            preds += self.models_[i].predict(X)
 
         return np.sign(preds) + (preds == 0)
 

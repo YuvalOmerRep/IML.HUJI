@@ -42,8 +42,8 @@ class DecisionStump(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        threshes_losses_one = np.apply_along_axis(self._find_threshold, 0, X, y, 1)
-        threshes_losses_minus = np.apply_along_axis(self._find_threshold, 0, X, y, -1)
+        threshes_losses_one = np.apply_along_axis(self._find_threshold, 0, X, y, 1).T
+        threshes_losses_minus = np.apply_along_axis(self._find_threshold, 0, X, y, -1).T
 
         one_best = np.argmin(threshes_losses_one[:, 1])
         minus_best = np.argmin(threshes_losses_minus[:, 1])
@@ -53,7 +53,7 @@ class DecisionStump(BaseEstimator):
             self.j_ = minus_best
             self.sign_ = -1
         else:
-            self.threshold_ = threshes_losses_one[minus_best][0]
+            self.threshold_ = threshes_losses_one[one_best][0]
             self.j_ = one_best
             self.sign_ = 1
 
@@ -80,8 +80,8 @@ class DecisionStump(BaseEstimator):
         to or above the threshold are predicted as `sign`
         """
         feature = deepcopy(X[:, self.j_])
-        feature[feature >= self.threshold_] = self.sign_
-        feature[feature < self.threshold_] = -self.sign_
+        feature[X[:, self.j_] >= self.threshold_] = self.sign_
+        feature[X[:, self.j_] < self.threshold_] = -self.sign_
 
         return feature
 
@@ -119,8 +119,8 @@ class DecisionStump(BaseEstimator):
 
         values, labels = values[sort_indexes], labels[sort_indexes]
 
-        loss = np.insert(np.cumsum(np.abs(np.where(np.sign(labels) != 1, 0, labels)), 0), 0, 0)[:-1] +\
-               np.flip(np.cumsum(np.flip(np.abs(np.where(np.sign(labels) == 1, 0, labels))), 0))
+        loss = np.insert(np.cumsum(np.abs(np.where(np.sign(labels) != sign, 0, labels)), 0), 0, 0)[:-1] +\
+               np.flip(np.cumsum(np.flip(np.abs(np.where(np.sign(labels) == sign, 0, labels))), 0))
 
         best_ind = np.argmin(loss)
 

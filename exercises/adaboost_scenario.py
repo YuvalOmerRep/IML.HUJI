@@ -46,12 +46,11 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     # Question 1: Train- and test errors of AdaBoost in noiseless case
     model = AdaBoost(DecisionStump, n_learners)
     model.fit(train_X, train_y)
-    print(train_X)
 
-    px.scatter(x=[i for i in range(1, n_learners + 1)],
-               y=[model.partial_loss(test_X, test_y, i) for i in range(1, n_learners + 1)]).add_trace(
+    px.line(x=[i for i in range(1, n_learners + 1)],
+            y=[model.partial_loss(test_X, test_y, i) for i in range(1, n_learners + 1)]).add_trace(
         go.Scatter(x=[i for i in range(1, n_learners + 1)],
-                   y=[model.partial_loss(train_X, train_y, i) for i in range(1, n_learners + 1)])).write_image(
+                   y=[model.partial_loss(train_X, train_y, i) for i in range(1, n_learners + 1)], mode="lines")).write_image(
         f"./loss_per_iterations.png")
 
     # Question 2: Plotting decision surfaces
@@ -62,8 +61,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
 
     for index, i in enumerate(T):
         fig.add_trace(go.Scatter(mode="markers", x=test_X[:, 0], y=test_X[:, 1],
-                                 marker=dict(color=model.partial_predict(test_X, i),
-                                             symbol=(test_y == 1), colorscale="Bluered")),
+                                 marker=dict(color=(test_y == 1).astype(int), colorscale=[custom[0], custom[-1]])),
                       row=floor(index / 2) + 1, col=index % 2 + 1)
 
     fig.write_image(f"./decision_surface.png")
