@@ -51,7 +51,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     losses = [model.partial_loss(test_X, test_y, i) for i in range(1, n_learners + 1)]
 
     px.line(x=[i for i in range(1, n_learners + 1)],
-            y=losses, title="Adaboost test error for ensemble size").add_trace(
+            y=losses, title=f"Adaboost test and train error for ensemble size with {noise} noise").add_trace(
         go.Scatter(x=[i for i in range(1, n_learners + 1)],
                    y=[model.partial_loss(train_X, train_y, i) for i in range(1, n_learners + 1)],
                    mode="lines", name="train loss")).update_layout(xaxis_title="ensemble size",
@@ -91,8 +91,9 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     fig1.write_image(f"./decision_surface_best_with_{noise}_noise.png")
 
     # Question 4: Decision surface with weighted samples
-    fig2 = px.scatter(x=train_X[:, 0], y=train_X[:, 1], size=model.D_).update_traces(
-        marker=dict(color=(train_y == 1).astype(int), colorscale=[custom[0], custom[-1]])).add_trace(
+    fig2 = px.scatter(x=train_X[:, 0], y=train_X[:, 1]).update_traces(
+        marker=dict(color=(train_y == 1).astype(int), size=((model.D_ / (np.max(model.D_))) * 10),
+                    colorscale=[custom[0], custom[-1]])).add_trace(
         decision_surface(lambda x: model.predict(x), lims[0], lims[1], showscale=False))
 
     fig2.update_layout(title=f"Full ensemble decision surface with weights on markers")
