@@ -62,10 +62,11 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     T = [5, 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
 
-    fig = make_subplots(2, 2, subplot_titles=["decision surface for ensemble of size 5",
-                                              "decision surface for ensemble of size 50",
-                                              "decision surface for ensemble of size 100",
-                                              "decision surface for ensemble of size 250"])
+    fig = make_subplots(2, 2,
+                        subplot_titles=["decision surface for ensemble of size 5",
+                                        "decision surface for ensemble of size 50",
+                                        "decision surface for ensemble of size 100",
+                                        "decision surface for ensemble of size 250"]).update_annotations(font_size=10)
 
     for index, i in enumerate(T):
         fig.add_traces([go.Scatter(mode="markers", x=test_X[:, 0], y=test_X[:, 1],
