@@ -3,6 +3,7 @@ from typing import NoReturn
 from ...base import BaseEstimator, BaseModule
 from ...desent_methods.gradient_descent import GradientDescent
 import numpy as np
+from sklearn.linear_model import Lasso
 
 
 class LassoObjective(BaseModule):
@@ -59,7 +60,7 @@ class LassoRegression(BaseEstimator):
         self.lam_ = lam
         self.include_intercept_ = include_intercept
         self.optimizer_ = optimizer
-        self._objective = None
+        self._objective = Lasso(alpha=lam, )
         self.coefs_ = None
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
