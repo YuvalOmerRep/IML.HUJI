@@ -2,7 +2,9 @@ from __future__ import annotations
 from typing import NoReturn
 from ...base import BaseEstimator
 import numpy as np
-from IMLearn.learners.regressors.linear_regression import LinearRegression
+from numpy.linalg import pinv
+
+from ...metrics import mean_square_error
 
 
 class RidgeRegression(BaseEstimator):
@@ -43,7 +45,6 @@ class RidgeRegression(BaseEstimator):
         self.coefs_ = None
         self.include_intercept_ = include_intercept
         self.lam_ = lam
-        self.lin = LinearRegression(include_intercept)
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -61,8 +62,15 @@ class RidgeRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        self.lin.fit(np.concatenate((X, np.diag(np.full(X.shape[1], fill_value=np.sqrt(self.lam_)))), axis=0),
-                     np.concatenate((y, np.zeros(X.shape[1]))))
+        if self.include_intercept_:
+            self.coefs_ = pinv(
+                np.hstack((np.concatenate((np.ones((X.shape[0], 1)), np.zeros((X.shape[1], 1)))),
+                           np.concatenate((X, np.diag(np.full(X.shape[1], fill_value=np.sqrt(self.lam_)))), axis=0))))\
+                          @ np.concatenate((y, np.zeros(X.shape[1])))
+
+        else:
+            self.coefs_ = pinv(np.concatenate((X, np.diag(np.full(X.shape[1], fill_value=np.sqrt(self.lam_)))),
+                                              axis=0)) @ np.concatenate((y, np.zeros(X.shape[1])))
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -78,7 +86,9 @@ class RidgeRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return self.lin.predict(X)
+        if self.include_intercept_:
+            return np.hstack((np.ones((X.shape[0], 1)), X)) @ self.coefs_
+        return X @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -97,4 +107,4 @@ class RidgeRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        return self.lin.loss(X, y)
+        return mean_square_error(y, self._predict(X))

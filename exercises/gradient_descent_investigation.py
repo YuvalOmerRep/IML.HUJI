@@ -73,12 +73,31 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
     weights: List[np.ndarray]
         Recorded parameters
     """
-    raise NotImplementedError()
+    values = []
+    weig = []
+
+    def func(weights, val):
+        values.append(val)
+        weig.append(weights)
+
+    return func, values, weig
 
 
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
-    raise NotImplementedError()
+    for i in etas:
+        learning_rate = FixedLR(i)
+        model_l2 = L2(init)
+        model_l1 = L1(init)
+        callback1_tuple = get_gd_state_recorder_callback()
+        grad_l2 = GradientDescent(learning_rate, tol=0, callback=callback1_tuple[0])
+        grad_l2.fit(model_l1, X=None, y=None)
+        plot_descent_path(model_l1, callback1_tuple[2], f"l1 with {i}")
+
+        callback2_tuple = get_gd_state_recorder_callback()
+        grad_l2 = GradientDescent(learning_rate, tol=0, callback=callback2_tuple[0])
+        grad_l2.fit(model_l2, X=None, y=None)
+        plot_descent_path(model_l2, callback1_tuple[2], f"l2 with {i}")
 
 
 def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
@@ -141,5 +160,5 @@ def fit_logistic_regression():
 if __name__ == '__main__':
     np.random.seed(0)
     compare_fixed_learning_rates()
-    compare_exponential_decay_rates()
-    fit_logistic_regression()
+    # compare_exponential_decay_rates()
+    # fit_logistic_regression()

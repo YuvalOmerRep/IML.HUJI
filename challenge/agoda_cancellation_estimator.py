@@ -2,8 +2,9 @@ from __future__ import annotations
 from typing import NoReturn
 from IMLearn.base import BaseEstimator
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, HistGradientBoostingClassifier, \
+    ExtraTreesClassifier, BaggingClassifier
+from sklearn.linear_model import LogisticRegression, RidgeClassifierCV, LogisticRegressionCV
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix, classification_report
@@ -29,16 +30,14 @@ class AgodaCancellationEstimator(BaseEstimator):
         self.PROB_LIMIT2 = 0.5
 
         if balanced:
-            self.forest = RandomForestClassifier(class_weight="balanced")
-            self.logistic = LogisticRegression(class_weight="balanced")
-            # self.SGD = SGDClassifier(class_weight="balanced", loss="modified_huber")
+            # TODO: try grid search
+            self.estimator = RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)
+            self.estimator2 = AdaBoostClassifier()
+            self.estimator3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
         else:
-            self.forest = RandomForestClassifier()
-            self.logistic = LogisticRegression()
-            # self.SGD = SGDClassifier(loss="modified_huber")
-        self.gradient = GradientBoostingClassifier()
-        # self.neural = MLPClassifier()
-
+            self.estimator = RandomForestClassifier(ccp_alpha=0.0001)
+            self.estimator2 = AdaBoostClassifier()
+            self.estimator3 = ExtraTreesClassifier(ccp_alpha=0.0001)
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -52,10 +51,12 @@ class AgodaCancellationEstimator(BaseEstimator):
         Notes
         -----
         """
-        self.forest.fit(X, y)
-        self.logistic.fit(X, y)
+        self.estimator.fit(X, y)
+        self.estimator2.fit(X, y)
+        self.estimator3.fit(X, y)
+        # self.logistic.fit(X, y)
         # self.SGD.fit(X, y)
-        self.gradient.fit(X, y)
+        # self.gradient.fit(X, y)
         # self.neural.fit(X, y)
 
     def _predict(self, X: np.ndarra) -> np.ndarray:
@@ -71,10 +72,16 @@ class AgodaCancellationEstimator(BaseEstimator):
             Predicted responses of given samples
         """
 
-        pred1 = self.forest.predict_proba(X)
-        pred2 = self.logistic.predict_proba(X)
-        # pred2 = self.neural.predict_proba(X)
-        pred3 = self.gradient.predict_proba(X)
+        # return np.array(self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT)
+        # pred1 = self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT
+        # pred2 = self.estimator2.predict_proba(X)[:, 1] >= self.PROB_LIMIT1
+        # pred3 = self.estimator3.predict_proba(X)[:, 1] >= self.PROB_LIMIT2
+        # return np.array((pred3.astype(int) + pred2.astype(int) + pred1.astype(int)) >= 2)
+        pred1 = self.estimator.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT
+        # pred2 = self.estimator2.predict(X)
+        # pred2 = np.array([pred2, pred2]).T
+        pred2 = self.estimator2.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT1
+        pred3 = self.estimator3.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT2
         # pred3 = self.SGD.predict_proba(X)
 
         result = []

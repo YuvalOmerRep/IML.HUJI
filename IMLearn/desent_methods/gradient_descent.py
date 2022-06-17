@@ -39,12 +39,9 @@ class GradientDescent:
         Callable function should receive as input a GradientDescent instance, and any additional
         arguments specified in the `GradientDescent.fit` function
     """
-    def __init__(self,
-                 learning_rate: BaseLR = FixedLR(1e-3),
-                 tol: float = 1e-5,
-                 max_iter: int = 1000,
-                 out_type: str = "last",
-                 callback: Callable[[GradientDescent, ...], None] = default_callback):
+
+    def __init__(self, learning_rate: BaseLR = FixedLR(1e-3), tol: float = 1e-5, max_iter: int = 1000,
+                 out_type: str = "last", callback: Callable[[GradientDescent, ...], None] = default_callback):
         """
         Instantiate a new instance of the GradientDescent class
 
@@ -75,6 +72,9 @@ class GradientDescent:
         self.tol_ = tol
         self.max_iter_ = max_iter
         self.callback_ = callback
+        self.result = []
+        self.average = []
+        self.best_score = 1
 
     def fit(self, f: BaseModule, X: np.ndarray, y: np.ndarray):
         """
@@ -119,4 +119,42 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        raise NotImplementedError()
+        model = f.__init__()
+        model.weights_ = np.zeros(X.shape[0] / X.size)
+        self.result = model.weights_
+
+        self.average.append(self.result)
+
+        for i in range(1, self.max_iter_):
+            weights_prev = model.weights_
+            grad = model.compute_jacobian(x=X, y=y)
+            val = model.compute_output(x=X, y=y)
+            eta = self.learning_rate_.lr_step(t=i)
+
+            model.weights_ = model.weights_ - eta * grad
+            self.update_result(model.weights_, val)
+
+            delta = np.linalg.norm(model.weights_ - weights_prev)
+
+            self.callback_(solver=self, weights=model.weights_, val=val, grad=grad, t=i, eta=eta, delta=delta)
+
+            if delta < self.tol_:
+                return self.return_result()
+
+        return self.return_result()
+
+    def update_result(self, new_data, score):
+        if self.out_type_ == "last":
+            self.result = new_data
+        elif self.out_type_ == "best":
+            if score <= self.best_score:
+                self.best_score = score
+                self.result = new_data
+        else:
+            self.average.append(new_data)
+
+    def return_result(self):
+        if self.out_type_ == "average":
+            return np.mean(self.average, axis=0)
+        else:
+            return self.result
