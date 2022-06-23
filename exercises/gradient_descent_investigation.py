@@ -9,6 +9,7 @@ from IMLearn.learners.classifiers.logistic_regression import LogisticRegression
 from IMLearn.utils import split_train_test
 
 import plotly.graph_objects as go
+import plotly.express as px
 
 
 def plot_descent_path(module: Type[BaseModule],
@@ -46,12 +47,14 @@ def plot_descent_path(module: Type[BaseModule],
     fig = plot_descent_path(IMLearn.desent_methods.modules.L1, np.ndarray([[1,1],[0,0]]))
     fig.show()
     """
+
     def predict_(w):
         return np.array([module(weights=wi).compute_output() for wi in w])
 
     from utils import decision_surface
     return go.Figure([decision_surface(predict_, xrange=xrange, yrange=yrange, density=70, showscale=False),
-                      go.Scatter(x=descent_path[:, 0], y=descent_path[:, 1], mode="markers+lines", marker_color="black")],
+                      go.Scatter(x=descent_path[:, 0], y=descent_path[:, 1], mode="markers+lines",
+                                 marker_color="black")],
                      layout=go.Layout(xaxis=dict(range=xrange),
                                       yaxis=dict(range=yrange),
                                       title=f"GD Descent Path {title}"))
@@ -76,7 +79,7 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
     values = []
     weig = []
 
-    def func(weights, val):
+    def func(solver, weights, val, grad, t, eta, delta):
         values.append(val)
         weig.append(weights)
 
@@ -87,30 +90,42 @@ def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e /
                                  etas: Tuple[float] = (1, .1, .01, .001)):
     for i in etas:
         learning_rate = FixedLR(i)
-        model_l2 = L2(init)
         model_l1 = L1(init)
         callback1_tuple = get_gd_state_recorder_callback()
-        grad_l2 = GradientDescent(learning_rate, tol=0, callback=callback1_tuple[0])
-        grad_l2.fit(model_l1, X=None, y=None)
-        plot_descent_path(model_l1, callback1_tuple[2], f"l1 with {i}")
+        grad_l1 = GradientDescent(learning_rate, tol=0, callback=callback1_tuple[0])
+        grad_l1.fit(model_l1, X=None, y=None)
+        plot_descent_path(L1, np.array(callback1_tuple[2]), f"l1 with {i}").write_image(f"l1_with_{i}.png")
 
+        model_l2 = L2(init)
         callback2_tuple = get_gd_state_recorder_callback()
         grad_l2 = GradientDescent(learning_rate, tol=0, callback=callback2_tuple[0])
         grad_l2.fit(model_l2, X=None, y=None)
-        plot_descent_path(model_l2, callback1_tuple[2], f"l2 with {i}")
+        plot_descent_path(L2, np.array(callback2_tuple[2]), f"l2 with {i}").write_image(f"l2_with_{i}.png")
+
+        px.line(x=[i for i in range(len(callback1_tuple[1]))], y=callback1_tuple[1]).write_image(f"l1 convergence_{i}.png")
+        px.line(x=[i for i in range(len(callback2_tuple[1]))], y=callback2_tuple[1]).write_image(f"l2 convergence_{i}.png")
 
 
 def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                     eta: float = .1,
                                     gammas: Tuple[float] = (.9, .95, .99, 1)):
-    # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
-    raise NotImplementedError()
+    fig = go.Figure()
+    location = 0
+    for gamma in gammas:
+        # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
+        learning_rate = ExponentialLR(eta, gamma)
+        model = L1(init)
+        callback1_tuple = get_gd_state_recorder_callback()
+        grad_l1 = GradientDescent(learning_rate, tol=0, callback=callback1_tuple[0])
+        grad_l1.fit(model, X=None, y=None)
+        fig.add_trace(go.Scatter(x=[i for i in range(len(callback1_tuple[1]))],
+                                 y=callback1_tuple[1], name=f"{gamma}"))
 
-    # Plot algorithm's convergence for the different values of gamma
-    raise NotImplementedError()
+        # Plot descent path for gamma=0.95
+        if gamma == 0.95:
+            plot_descent_path(L1, np.array(callback1_tuple[2]), f"l1 with 0.95").write_image(f"l1_with_0.95.png")
 
-    # Plot descent path for gamma=0.95
-    raise NotImplementedError()
+    fig.write_image("convergence_over_all_params.png")
 
 
 def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8) -> \

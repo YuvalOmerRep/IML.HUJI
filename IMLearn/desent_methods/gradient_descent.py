@@ -119,9 +119,13 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        model = f.__init__()
-        model.weights_ = np.zeros(X.shape[0] / X.size)
+        model = f
         self.result = model.weights_
+
+        self.callback_(solver=self, weights=model.weights_,
+                       val=model.compute_output(x=X, y=y),
+                       grad=model.compute_jacobian(x=X, y=y), t=0,
+                       eta=self.learning_rate_.lr_step(t=0), delta=0)
 
         self.average.append(self.result)
 
