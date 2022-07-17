@@ -28,7 +28,9 @@ class NeuralNetwork(BaseEstimator, BaseModule):
                  loss_fn: BaseModule,
                  solver: Union[StochasticGradientDescent, GradientDescent]):
         super().__init__()
-        raise NotImplementedError()
+        self.modules = modules
+        self.loss_fn = loss_fn
+        self.solver = solver
 
     # region BaseEstimator implementations
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
@@ -103,7 +105,8 @@ class NeuralNetwork(BaseEstimator, BaseModule):
         -----
         Function stores all intermediate values in the `self.pre_activations_` and `self.post_activations_` arrays
         """
-        raise NotImplementedError()
+        passed = self.compute_prediction(X)
+        return self.loss_fn.compute_output(X=passed, y=y)
 
     def compute_prediction(self, X: np.ndarray):
         """
@@ -120,7 +123,11 @@ class NeuralNetwork(BaseEstimator, BaseModule):
         output : ndarray of shape (n_samples, n_classes)
             Network's output values prior to the call of the loss function
         """
-        raise NotImplementedError()
+        inx = X
+        for module in self.modules:
+            inx = module.compute_output(inx)
+
+        return inx
 
     def compute_jacobian(self, X: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -143,7 +150,17 @@ class NeuralNetwork(BaseEstimator, BaseModule):
         Function depends on values calculated in forward pass and stored in
         `self.pre_activations_` and `self.post_activations_`
         """
-        raise NotImplementedError()
+        activations = [X]
+        pre_activations = []
+
+        for module in self.modules:
+            pre_activations.append(module.weights @ activations[-1])
+            activations.append(module.compute_output(X=activations[-1]))
+
+        derivative = self.modules[-1].compute_jacobian(activations[-1])
+        for module, act in self.modules[:-1][::-1], activations[:-1][::-1]:
+            derivative = derivative * module.compute_jacobian(act)
+
 
     @property
     def weights(self) -> np.ndarray:

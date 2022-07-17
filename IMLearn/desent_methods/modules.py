@@ -1,5 +1,5 @@
 import numpy as np
-from IMLearn import BaseModule
+from IMLearn.base import BaseModule
 
 
 class L2(BaseModule):
@@ -34,7 +34,7 @@ class L2(BaseModule):
         output: ndarray of shape (1,)
             Value of function at point self.weights
         """
-        return np.linalg.norm(self.weights_) ** 2
+        return np.linalg.norm(self.weights) ** 2
 
     def compute_jacobian(self, **kwargs) -> np.ndarray:
         """
@@ -50,7 +50,7 @@ class L2(BaseModule):
         output: ndarray of shape (n_in,)
             L2 derivative with respect to self.weights at point self.weights
         """
-        return 2 * self.weights_
+        return 2 * self.weights
 
 
 class L1(BaseModule):
@@ -79,7 +79,7 @@ class L1(BaseModule):
         output: ndarray of shape (1,)
             Value of function at point self.weights
         """
-        return np.linalg.norm(self.weights_, ord=1)
+        return np.linalg.norm(self.weights, ord=1)
 
     def compute_jacobian(self, **kwargs) -> np.ndarray:
         """
@@ -95,7 +95,7 @@ class L1(BaseModule):
         output: ndarray of shape (n_in,)
             L1 derivative with respect to self.weights at point self.weights
         """
-        return np.sign(self.weights_)
+        return np.sign(self.weights)
 
 
 class LogisticModule(BaseModule):
@@ -133,7 +133,7 @@ class LogisticModule(BaseModule):
         output: ndarray of shape (1,)
             Value of function at point self.weights
         """
-        Xw_dot = np.dot(X, self.weights_)
+        Xw_dot = np.dot(X, self.weights)
         return - np.mean(y * Xw_dot - np.log(1 + np.exp(Xw_dot)))
 
     def compute_jacobian(self, X: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -153,7 +153,7 @@ class LogisticModule(BaseModule):
         output: ndarray of shape (n_features,)
             Derivative of function with respect to self.weights at point self.weights
         """
-        Xw_dot = np.dot(X, self.weights_)
+        Xw_dot = np.dot(X, self.weights)
         return - np.mean(X * (y - (np.exp(Xw_dot) / (1 + np.exp(Xw_dot))))[:, np.newaxis], axis=0)
 
 
@@ -245,7 +245,7 @@ class RegularizedModule(BaseModule):
         -------
         weights: ndarray of shape (n_in, n_out)
         """
-        return self.fidelity_module_.weights_
+        return self.fidelity_module_.weights
 
     @weights.setter
     def weights(self, weights: np.ndarray) -> None:
@@ -260,8 +260,8 @@ class RegularizedModule(BaseModule):
         weights: ndarray of shape (n_in, n_out)
             Weights to set for module
         """
-        self.fidelity_module_.weights_ = weights
+        self.fidelity_module_.weights = weights
         if self.include_intercept_:
-            self.regularization_module_.weights_ = weights[1:]
+            self.regularization_module_.weights = weights[1:]
         else:
-            self.regularization_module_.weights_ = weights
+            self.regularization_module_.weights = weights

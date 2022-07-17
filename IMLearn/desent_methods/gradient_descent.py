@@ -119,31 +119,30 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        model = f
-        self.result = model.weights_
+        self.result = f.weights
 
-        self.callback_(solver=self, weights=model.weights_,
-                       val=model.compute_output(x=X, y=y),
-                       grad=model.compute_jacobian(x=X, y=y), t=0,
+        self.callback_(solver=self, weights=f.weights,
+                       val=f.compute_output(X=X, y=y),
+                       grad=f.compute_jacobian(X=X, y=y), t=0,
                        eta=self.learning_rate_.lr_step(t=0), delta=0)
 
         self.average.append(self.result)
 
         for i in range(1, self.max_iter_):
-            weights_prev = model.weights_
-            grad = model.compute_jacobian(x=X, y=y)
-            val = model.compute_output(x=X, y=y)
+            weights_prev = f.weights
+            grad = f.compute_jacobian(X=X, y=y)
+            val = f.compute_output(X=X, y=y)
             eta = self.learning_rate_.lr_step(t=i)
 
-            model.weights_ = model.weights_ - eta * grad
-            self.update_result(model.weights_, val)
+            f.weights = f.weights - eta * grad
+            self.update_result(f.weights, val)
 
-            delta = np.linalg.norm(model.weights_ - weights_prev)
+            delta = np.linalg.norm(f.weights - weights_prev)
 
-            self.callback_(solver=self, weights=model.weights_, val=val, grad=grad, t=i, eta=eta, delta=delta)
+            self.callback_(solver=self, weights=f.weights, val=val, grad=grad, t=i, eta=eta, delta=delta)
 
             if delta < self.tol_:
-                return self.return_result()
+                break
 
         return self.return_result()
 

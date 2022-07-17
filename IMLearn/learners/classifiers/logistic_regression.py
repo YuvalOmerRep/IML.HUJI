@@ -66,18 +66,10 @@ class LogisticRegression(BaseEstimator):
         self.lam_ = lam
         self.penalty_ = penalty
         self.alpha_ = alpha
+        self.module = None
 
         if penalty not in ["none", "l1", "l2"]:
             raise ValueError("Supported penalty types are: none, l1, l2")
-
-        elif penalty == "l1":
-            self.module = RegularizedModule(LogisticModule(), L1(), lam, include_intercept=include_intercept)
-
-        elif penalty == "l2":
-            self.module = RegularizedModule(LogisticModule(), L2(), lam, include_intercept=include_intercept)
-
-        else:
-            self.module = LogisticModule()
 
         self.coefs_ = None
 
@@ -98,11 +90,24 @@ class LogisticRegression(BaseEstimator):
         Fits model using specified `self.optimizer_` passed when instantiating class and includes an intercept
         if specified by `self.include_intercept_
         """
-        self.module.weights = np.sqrt(X.shape[1]) * np.random.multivariate_normal(0, np.identity(X.shape[1]))
-
         X = X.copy()
         if self.include_intercept_:
             X = np.insert(X, 0, 1, axis=1)
+
+        weights = np.random.multivariate_normal(np.zeros(X.shape[1]), np.identity(X.shape[1]) / X.shape[1])
+
+        if self.penalty_ == "l1":
+            self.module = RegularizedModule(fidelity_module=LogisticModule(weights=weights),
+                                            regularization_module=L1(), lam=self.lam_,
+                                            include_intercept=self.include_intercept_, weights=weights)
+
+        elif self.penalty_ == "l2":
+            self.module = RegularizedModule(fidelity_module=LogisticModule(weights=weights),
+                                            regularization_module=L2(), lam=self.lam_,
+                                            include_intercept=self.include_intercept_, weights=weights)
+
+        else:
+            self.module = LogisticModule(weights=weights)
 
         self.coefs_ = self.solver_.fit(self.module, X, y)
 
@@ -137,7 +142,7 @@ class LogisticRegression(BaseEstimator):
             Probability of each sample being classified as `1` according to the fitted model
         """
         if self.include_intercept_:
-            intercept = np.hstack((np.ones((X.shape[0], 1)), X))
+            intercept = np.insert(X, 0, 1, axis=1)
             pred = intercept @ self.coefs_
         else:
             pred = X @ self.coefs_

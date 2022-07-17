@@ -7,9 +7,15 @@ from IMLearn.desent_methods import GradientDescent, FixedLR, ExponentialLR
 from IMLearn.desent_methods.modules import L1, L2
 from IMLearn.learners.classifiers.logistic_regression import LogisticRegression
 from IMLearn.utils import split_train_test
+from IMLearn.model_selection import cross_validate
+from IMLearn.metrics import misclassification_error
+
+from sklearn.metrics import roc_curve, auc
 
 import plotly.graph_objects as go
 import plotly.express as px
+
+from utils import custom
 
 
 def plot_descent_path(module: Type[BaseModule],
@@ -88,6 +94,8 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
 
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
+    fig1 = go.Figure()
+    fig2 = go.Figure()
     for i in etas:
         learning_rate = FixedLR(i)
         model_l1 = L1(init)
@@ -102,15 +110,24 @@ def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e /
         grad_l2.fit(model_l2, X=None, y=None)
         plot_descent_path(L2, np.array(callback2_tuple[2]), f"l2 with {i}").write_image(f"l2_with_{i}.png")
 
-        px.line(x=[i for i in range(len(callback1_tuple[1]))], y=callback1_tuple[1]).write_image(f"l1 convergence_{i}.png")
-        px.line(x=[i for i in range(len(callback2_tuple[1]))], y=callback2_tuple[1]).write_image(f"l2 convergence_{i}.png")
+        fig1.add_trace(go.Scatter(x=[i for i in range(len(callback1_tuple[1]))],
+                            y=callback1_tuple[1], name=f"{i}"))
+
+        fig2.add_trace(go.Scatter(x=[i for i in range(len(callback2_tuple[1]))],
+                            y=callback2_tuple[1], name=f"{i}"))
+
+        print(f"minimum with l1 over {i}: {np.min(callback1_tuple[1])}")
+        print(f"minimum with l2 over {i}: {np.min(callback2_tuple[1])}")
+
+    fig1.write_image("convergence_l1.png")
+    fig2.write_image("convergence_l2.png")
 
 
 def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                     eta: float = .1,
                                     gammas: Tuple[float] = (.9, .95, .99, 1)):
+    results = []
     fig = go.Figure()
-    location = 0
     for gamma in gammas:
         # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
         learning_rate = ExponentialLR(eta, gamma)
@@ -121,10 +138,13 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
         fig.add_trace(go.Scatter(x=[i for i in range(len(callback1_tuple[1]))],
                                  y=callback1_tuple[1], name=f"{gamma}"))
 
+        results.append(np.min(callback1_tuple[1]))
+
         # Plot descent path for gamma=0.95
         if gamma == 0.95:
             plot_descent_path(L1, np.array(callback1_tuple[2]), f"l1 with 0.95").write_image(f"l1_with_0.95.png")
 
+    print(np.min(results))
     fig.write_image("convergence_over_all_params.png")
 
 
@@ -161,19 +181,59 @@ def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8)
 
 
 def fit_logistic_regression():
+    c = [custom[0], custom[-1]]
     # Load and split SA Heard Disease dataset
     X_train, y_train, X_test, y_test = load_data()
 
     # Plotting convergence rate of logistic regression over SA heart disease data
-    raise NotImplementedError()
+    model = LogisticRegression(solver=GradientDescent(learning_rate=FixedLR(1e-4), max_iter=20000))
+    model.fit(X_train.to_numpy(), y_train.to_numpy())
+
+    fpr, tpr, thresholds = roc_curve(y_train, model.predict_proba(X_train.to_numpy()))
+
+    go.Figure(
+        data=[go.Scatter(x=[0, 1], y=[0, 1], mode="lines", line=dict(color="black", dash='dash'),
+                         name="Random Class Assignment"),
+              go.Scatter(x=fpr, y=tpr, mode='markers+lines', text=thresholds, name="", showlegend=False, marker_size=5,
+                         marker_color=c[1][1],
+                         hovertemplate="<b>Threshold:</b>%{text:.3f}<br>FPR: %{x:.3f}<br>TPR: %{y:.3f}")],
+        layout=go.Layout(title=rf"$\text{{ROC Curve Of Fitted Model - AUC}}={auc(fpr, tpr):.6f}$",
+                         xaxis=dict(title=r"$\text{False Positive Rate (FPR)}$"),
+                         yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$"))).write_image("roc_curve.png")
+
+    best_alpha = thresholds[np.argmax(tpr - fpr)]
+    print(f"best alpha: {best_alpha}")
+    model.alpha_ = best_alpha
+    print(f"with loss {model.loss(X_test.to_numpy(), y_test.to_numpy())}")
 
     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
     # of regularization parameter
-    raise NotImplementedError()
+    for penalty in ["l1", "l2"]:
+
+        results = []
+        lambdas = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
+        for i in lambdas:
+            model1 = LogisticRegression(solver=GradientDescent(learning_rate=FixedLR(1e-4),
+                                                               max_iter=20000), penalty=penalty, lam=i)
+            results.append(cross_validate(model1, X_train.to_numpy(), y_train.to_numpy(), misclassification_error)[1])
+
+        best_lam = lambdas[np.argmin(results)]
+        print(f"best lambda: {best_lam}")
+        model2 = LogisticRegression(penalty=penalty, solver=GradientDescent(learning_rate=FixedLR(1e-4),
+                                                                            max_iter=20000), lam=best_lam)
+        model2.fit(X_train.to_numpy(), y_train.to_numpy())
+        print(f"with error: {model2.loss(X_test.to_numpy(), y_test.to_numpy())}")
 
 
 if __name__ == '__main__':
-    np.random.seed(0)
-    compare_fixed_learning_rates()
+    # np.random.seed(0)
+    # compare_fixed_learning_rates()
     # compare_exponential_decay_rates()
     # fit_logistic_regression()
+    df = pd.read_csv("piz.csv")
+    # fig = go.Figure()
+    # fig.add_trace(go.Scatter(x=df["X Cu"], y=df["delta H"]))
+    # fig.update_layout(xaxis=dict(tickmode="linear"))
+    # fig.write_image("graph1A.png")
+    # px.line(df, x="X Cu", y="delta H", title="delta H over X Cu", markers=True).write_image("graph1.png")
+    px.scatter(df, x="X Cu", y="delta H", title="delta H over X Cu").show()
